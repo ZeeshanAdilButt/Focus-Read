@@ -52,7 +52,7 @@ If you want to build the extension yourself:
 
 1. **Clone the Repository**
 ```bash
-git clone https://github.com/yourusername/flow-mate.git
+git clone https://github.com/ZeeshanAdilButt/flow-mate.git
 cd flow-mate
 ```
 
