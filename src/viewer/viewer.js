@@ -125,7 +125,17 @@ function goToPage(num) {
     
     const pageDiv = document.getElementById(`page-${num}`);
     if (pageDiv) {
-        pageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // If page is a placeholder, render it first
+        if (pageDiv.classList.contains('placeholder')) {
+            renderPage(num).then(() => {
+                const rendered = document.getElementById(`page-${num}`);
+                if (rendered) {
+                    rendered.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        } else {
+            pageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 }
 
@@ -674,10 +684,12 @@ function highlightWordsInPdf(startIndex, wordCount = 1) {
     const endIndex = Math.min(startIndex + wordCount - 1, allWords.length - 1);
     const firstWord = allWords[startIndex];
     
-    // Update page display
+    // Update page display (but don't overwrite if user is typing)
     if (firstWord.page !== currentPage) {
         currentPage = firstWord.page;
-        pageInput.value = currentPage;
+        if (!isTypingPage) {
+            pageInput.value = currentPage;
+        }
         updateNavButtons();
     }
     
