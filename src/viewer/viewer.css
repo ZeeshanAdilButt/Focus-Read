@@ -1,168 +1,401 @@
-body {
+/* Flow Mate PDF Viewer - Modern UI */
+* {
     margin: 0;
-    background-color: #1a1a2e;
-    font-family: 'Segoe UI', sans-serif;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f17;
+    color: #e5e7eb;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    overflow: hidden;
 }
 
+/* ========== TOOLBAR ========== */
 #toolbar {
-    min-height: 50px;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: white;
+    height: 60px;
+    background: linear-gradient(180deg, #1a1a2e 0%, #151525 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 20px;
     gap: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     z-index: 100;
-    border-bottom: 1px solid rgba(231, 76, 60, 0.3);
-    flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
-.file-label {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
 }
 
-.file-label:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+.toolbar-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-.file-label input[type="file"] {
-    display: none;
-}
-
-/* Page Navigation */
-.page-nav {
+/* Brand */
+.brand {
     display: flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(255,255,255,0.05);
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
+    gap: 10px;
 }
 
-.nav-btn {
-    background: transparent;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    padding: 6px 10px;
-    font-size: 0.9rem;
-    border-radius: 4px;
-    transition: all 0.2s;
+.brand-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(231, 76, 60, 0.1);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.nav-btn:hover {
-    background: rgba(231, 76, 60, 0.2);
+.brand-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+
+/* File Button */
+.file-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #9ca3af;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.file-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+    color: #fff;
+}
+
+.file-btn input {
+    display: none;
+}
+
+/* Page Controls */
+.page-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.03);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.icon-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover:not(:disabled) {
+    background: rgba(231, 76, 60, 0.15);
     color: #e74c3c;
 }
 
-.nav-btn:disabled {
+.icon-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
 }
 
-#pageInfo {
+.page-indicator {
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: #888;
-    font-size: 0.9rem;
+    gap: 8px;
+    padding: 0 12px;
 }
 
 #pageInput {
-    width: 50px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
+    width: 48px;
+    height: 32px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid transparent;
+    border-radius: 6px;
     color: #fff;
-    padding: 4px 8px;
-    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
     text-align: center;
-    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
 }
 
 #pageInput:focus {
     outline: none;
     border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
 }
 
-.page-sep {
-    color: #666;
-    padding: 0 2px;
+#pageInput::-webkit-inner-spin-button,
+#pageInput::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
-/* Toolbar Actions */
-.toolbar-actions {
+.page-divider {
+    color: #4b5563;
+    font-size: 0.875rem;
+}
+
+#pageCount {
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    min-width: 32px;
+}
+
+/* Zoom Controls */
+.zoom-controls {
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.03);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
 }
 
+#zoomLevel {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    font-weight: 500;
+    min-width: 44px;
+    text-align: center;
+}
+
+/* Tool Buttons */
 .tool-btn {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #888;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.85rem;
-    transition: all 0.2s;
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: #9ca3af;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .tool-btn:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
     color: #fff;
 }
 
 .tool-btn.active {
-    background: rgba(231, 76, 60, 0.2);
-    border-color: rgba(231, 76, 60, 0.4);
+    background: rgba(231, 76, 60, 0.15);
+    border-color: rgba(231, 76, 60, 0.3);
     color: #e74c3c;
 }
 
-#instructions {
-    color: #555;
-    font-size: 0.8rem;
-    margin-left: auto;
+/* Read Button - Primary CTA */
+.read-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
 }
 
-#pdfContainer {
+.read-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+
+.read-btn:active {
+    transform: translateY(0);
+}
+
+/* ========== WELCOME SCREEN ========== */
+.welcome-screen {
     flex: 1;
-    overflow: auto;
-    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f17 70%);
+}
+
+.welcome-content {
+    text-align: center;
+    max-width: 480px;
+    padding: 40px;
+}
+
+.welcome-icon {
+    margin-bottom: 24px;
+    opacity: 0.9;
+}
+
+.welcome-content h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+.welcome-content p {
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+
+.welcome-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 24px rgba(231, 76, 60, 0.3);
+}
+
+.welcome-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(231, 76, 60, 0.4);
+}
+
+.welcome-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 32px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 0.8rem;
+}
+
+.welcome-hint svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+/* ========== LOADING OVERLAY ========== */
+.loading-overlay {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 15, 23, 0.95);
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 20px;
+    z-index: 50;
 }
 
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(231, 76, 60, 0.2);
+    border-top-color: #e74c3c;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: #9ca3af;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* ========== PDF CONTAINER ========== */
+.pdf-container {
+    flex: 1;
+    overflow: auto;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    background: #0a0a12;
+}
+
+.pdf-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+.pdf-container::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.02);
+}
+
+.pdf-container::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+}
+
+.pdf-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+/* PDF Pages */
 .pdf-page {
     position: relative;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    background-color: white;
+    background: #fff;
     border-radius: 4px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+    transition: box-shadow 0.3s ease;
 }
 
-/* Text Layer for selection */
+.pdf-page:hover {
+    box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* Text Layer for Selection */
 .text-layer {
     position: absolute;
     left: 0;
@@ -176,7 +409,7 @@ body {
 }
 
 .text-layer.selectable {
-    opacity: 0.2;
+    opacity: 0.3;
     pointer-events: auto;
 }
 
@@ -188,18 +421,79 @@ body {
     transform-origin: 0% 0%;
 }
 
-.text-layer.selectable > span {
-    color: transparent;
-    background: transparent;
-}
-
 .text-layer.selectable > span::selection {
-    background: rgba(231, 76, 60, 0.4);
+    background: rgba(231, 76, 60, 0.5);
 }
 
-/* Flow Mate highlight */
+/* Flow Mate Highlight */
 .flowmate-pdf-highlight {
     position: absolute;
     pointer-events: none;
     z-index: 50;
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.35), rgba(243, 156, 18, 0.25));
+    border: 2px solid rgba(231, 76, 60, 0.9);
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(231, 76, 60, 0.5), 0 0 40px rgba(231, 76, 60, 0.2);
+    animation: highlightPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.5), 0 0 40px rgba(231, 76, 60, 0.2); }
+    50% { box-shadow: 0 0 25px rgba(231, 76, 60, 0.7), 0 0 50px rgba(231, 76, 60, 0.3); }
+}
+
+/* ========== STATUS TOAST ========== */
+.status-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.status-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ========== UTILITY CLASSES ========== */
+.hidden {
+    display: none !important;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 900px) {
+    .toolbar-center {
+        position: static;
+        transform: none;
+    }
+    
+    #toolbar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 12px 16px;
+        gap: 12px;
+    }
+    
+    .brand-name {
+        display: none;
+    }
+    
+    .read-btn span {
+        display: none;
+    }
+    
+    .tool-btn span {
+        display: none;
+    }
 }

@@ -844,12 +844,23 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsOverlay.classList.add('hidden');
     });
     
-    // Fullscreen functionality
+    // Fullscreen functionality - uses browser's Fullscreen API
     function enterFullscreen() {
         isFullscreen = true;
         
+        // Request browser fullscreen on the reader display
+        const container = document.querySelector('.container');
+        if (container.requestFullscreen) {
+            container.requestFullscreen();
+        } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+        } else if (container.msRequestFullscreen) {
+            container.msRequestFullscreen();
+        }
+        
         // Add fullscreen class to reader display
         readerDisplay.classList.add('fullscreen-mode');
+        document.body.classList.add('in-fullscreen');
         
         // Create floating controls overlay
         fullscreenOverlay = document.createElement('div');
@@ -858,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="fs-btn" id="fsPlayPause" title="Play/Pause"><i class="fas fa-${isPlaying ? 'pause' : 'play'}"></i></button>
             <button class="fs-btn" id="fsPrev" title="Back"><i class="fas fa-backward"></i></button>
             <button class="fs-btn" id="fsNext" title="Forward"><i class="fas fa-forward"></i></button>
-            <button class="fs-btn" id="fsExit" title="Exit Fullscreen"><i class="fas fa-compress"></i></button>
+            <button class="fs-btn" id="fsExit" title="Exit Fullscreen (ESC)"><i class="fas fa-compress"></i></button>
         `;
         document.body.appendChild(fullscreenOverlay);
         
@@ -906,6 +917,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function exitFullscreen() {
         isFullscreen = false;
         readerDisplay.classList.remove('fullscreen-mode');
+        document.body.classList.remove('in-fullscreen');
+        
+        // Exit browser fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
         
         if (fullscreenOverlay) {
             fullscreenOverlay.remove();
@@ -937,14 +958,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // ESC key to close overlays and exit fullscreen
+    // Listen for browser fullscreen change (user pressed ESC)
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && isFullscreen) {
+            // User exited fullscreen via ESC or other means
+            exitFullscreen();
+        }
+    });
+    document.addEventListener('webkitfullscreenchange', () => {
+        if (!document.webkitFullscreenElement && isFullscreen) {
+            exitFullscreen();
+        }
+    });
+    
+    // ESC key to close overlays (fullscreen is handled by browser)
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (isFullscreen) {
-                exitFullscreen();
-            } else {
+            if (!isFullscreen) {
                 settingsOverlay.classList.add('hidden');
                 manualInputOverlay.classList.add('hidden');
+            }
+        }
+        
+        // Keyboard controls in fullscreen mode
+        if (isFullscreen) {
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                if (isPlaying) pause(); else play();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                stepNavigation(-1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                stepNavigation(1);
             }
         }
     });
@@ -980,6 +1026,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. Context Menu Listener - "Read from here"
     // Uses the clicked word index from content script for precise positioning
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+         // Handle PDF viewer sending content directly
+         if (message.action === "loadPdfContent") {
+             if (message.content) {
+                 if (message.paragraphStarts) {
+                     storedParagraphStarts = message.paragraphStarts;
+                 }
+                 loadText(message.content);
+                 showToast(`Loaded ${words.length.toLocaleString()} words from PDF`);
+             }
+             return;
+         }
+         
          if (message.action === "contextMenuTriggered") {
              const selectionText = message.selectionText?.trim();
              const clickedWordIndex = message.clickedWordIndex ?? -1;
