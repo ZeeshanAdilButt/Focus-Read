@@ -50,9 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIndex = 0;
     let isPlaying = false;
     let timer = null; // Used for "next step" timeout
-    let isFullscreen = false;
-    let fullscreenOverlay = null;
-    let fullscreenProgress = null;
     
     // Config
     let config = {
@@ -241,14 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const mins = Math.floor(minutesLeft);
         const secs = Math.ceil((minutesLeft - mins) * 60);
         timeRemaining.innerText = (mins > 0 ? `${mins}m ` : "") + `${secs}s`;
-        
-        // Update fullscreen progress if active
-        if (isFullscreen && fullscreenProgress) {
-            const bar = document.getElementById('fsProgressBar');
-            if (bar) {
-                bar.style.width = percent + '%';
-            }
-        }
     }
 
     let lastStepDelta = 1;
@@ -333,26 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
         isPlaying = false;
         playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
         
-        // Update fullscreen button if active
-        const fsPlayBtn = document.getElementById('fsPlayPause');
-        if (fsPlayBtn) fsPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
-        
         if (timer) {
             clearTimeout(timer);
             timer = null;
         }
-        // Clear highlight when paused
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            if (tabs[0]) {
-                const isExtensionPage = tabs[0].url && tabs[0].url.startsWith('chrome-extension://');
-                const msg = { action: "clearHighlight" };
-                if (isExtensionPage) {
-                    chrome.runtime.sendMessage(msg).catch(() => {});
-                } else {
-                    chrome.tabs.sendMessage(tabs[0].id, msg).catch(() => {});
-                }
-            }
-        });
+        // Keep highlight visible when paused - don't clear it
     }
 
     function loadText(text, indexToStart = 0) {
@@ -844,154 +818,59 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsOverlay.classList.add('hidden');
     });
     
-    // Fullscreen functionality - uses browser's Fullscreen API
-    function enterFullscreen() {
-        isFullscreen = true;
-        
-        // Request browser fullscreen on the reader display
-        const container = document.querySelector('.container');
-        if (container.requestFullscreen) {
-            container.requestFullscreen();
-        } else if (container.webkitRequestFullscreen) {
-            container.webkitRequestFullscreen();
-        } else if (container.msRequestFullscreen) {
-            container.msRequestFullscreen();
+    // Fullscreen functionality - opens dedicated fullscreen page in new window
+    function openFullscreenWindow() {
+        if (words.length === 0) {
+            // No content to show
+            return;
         }
         
-        // Add fullscreen class to reader display
-        readerDisplay.classList.add('fullscreen-mode');
-        document.body.classList.add('in-fullscreen');
+        // Pause current playback
+        const wasPlaying = isPlaying;
+        if (isPlaying) pause();
         
-        // Create floating controls overlay
-        fullscreenOverlay = document.createElement('div');
-        fullscreenOverlay.className = 'fullscreen-overlay';
-        fullscreenOverlay.innerHTML = `
-            <button class="fs-btn" id="fsPlayPause" title="Play/Pause"><i class="fas fa-${isPlaying ? 'pause' : 'play'}"></i></button>
-            <button class="fs-btn" id="fsPrev" title="Back"><i class="fas fa-backward"></i></button>
-            <button class="fs-btn" id="fsNext" title="Forward"><i class="fas fa-forward"></i></button>
-            <button class="fs-btn" id="fsExit" title="Exit Fullscreen (ESC)"><i class="fas fa-compress"></i></button>
-        `;
-        document.body.appendChild(fullscreenOverlay);
-        
-        // Create progress bar
-        fullscreenProgress = document.createElement('div');
-        fullscreenProgress.className = 'fullscreen-progress';
-        fullscreenProgress.innerHTML = '<div class="fullscreen-progress-bar" id="fsProgressBar"></div>';
-        document.body.appendChild(fullscreenProgress);
-        updateFullscreenProgress();
-        
-        // Bind controls
-        document.getElementById('fsPlayPause').addEventListener('click', () => {
-            if (isPlaying) pause(); else play();
-            document.getElementById('fsPlayPause').innerHTML = `<i class="fas fa-${isPlaying ? 'pause' : 'play'}"></i>`;
+        // Send content to background script to open fullscreen window
+        chrome.runtime.sendMessage({
+            action: "openFullscreen",
+            words: words,
+            currentIndex: currentIndex,
+            config: {
+                wpm: config.wpm,
+                chunkSize: config.chunkSize,
+                mode: config.mode,
+                pauses: config.pauses,
+                pauseScale: config.pauseScale,
+                focusColor: config.focusColor,
+                navMode: config.navMode,
+                navAmount: config.navAmount
+            },
+            wasPlaying: wasPlaying
         });
-        document.getElementById('fsPrev').addEventListener('click', () => {
-            stepNavigation(-1);
-            updateFullscreenProgress();
-        });
-        document.getElementById('fsNext').addEventListener('click', () => {
-            stepNavigation(1);
-            updateFullscreenProgress();
-        });
-        document.getElementById('fsExit').addEventListener('click', exitFullscreen);
-        
-        // Update fullscreen button icon
-        fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
-        fullscreenBtn.title = 'Exit Fullscreen';
-        
-        // Hide controls after 3s of inactivity
-        let hideTimeout;
-        const showControls = () => {
-            fullscreenOverlay.style.opacity = '1';
-            clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(() => {
-                if (isFullscreen && isPlaying) {
-                    fullscreenOverlay.style.opacity = '0';
-                }
-            }, 3000);
-        };
-        document.addEventListener('mousemove', showControls);
-        showControls();
     }
 
-    function exitFullscreen() {
-        isFullscreen = false;
-        readerDisplay.classList.remove('fullscreen-mode');
-        document.body.classList.remove('in-fullscreen');
-        
-        // Exit browser fullscreen
-        if (document.exitFullscreen) {
-            document.exitFullscreen().catch(() => {});
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-        }
-        
-        if (fullscreenOverlay) {
-            fullscreenOverlay.remove();
-            fullscreenOverlay = null;
-        }
-        if (fullscreenProgress) {
-            fullscreenProgress.remove();
-            fullscreenProgress = null;
-        }
-        
-        fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
-        fullscreenBtn.title = 'Fullscreen';
-    }
-
-    function updateFullscreenProgress() {
-        if (!isFullscreen || !fullscreenProgress) return;
-        const bar = document.getElementById('fsProgressBar');
-        if (bar && words.length > 0) {
-            const pct = (currentIndex / words.length) * 100;
-            bar.style.width = pct + '%';
-        }
-    }
-
-    fullscreenBtn.addEventListener('click', () => {
-        if (isFullscreen) {
-            exitFullscreen();
-        } else {
-            enterFullscreen();
+    fullscreenBtn.addEventListener('click', openFullscreenWindow);
+    
+    // Listen for sync messages from fullscreen page
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === "syncFromFullscreen") {
+            // Sync position from fullscreen
+            currentIndex = message.currentIndex || 0;
+            updateWordDisplay();
+            updateProgress();
+            updateScrollProgress();
+            
+            // Resume playing if it was playing before
+            if (message.wasPlaying) {
+                setTimeout(() => play(), 300);
+            }
         }
     });
     
-    // Listen for browser fullscreen change (user pressed ESC)
-    document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement && isFullscreen) {
-            // User exited fullscreen via ESC or other means
-            exitFullscreen();
-        }
-    });
-    document.addEventListener('webkitfullscreenchange', () => {
-        if (!document.webkitFullscreenElement && isFullscreen) {
-            exitFullscreen();
-        }
-    });
-    
-    // ESC key to close overlays (fullscreen is handled by browser)
+    // ESC key to close overlays
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (!isFullscreen) {
-                settingsOverlay.classList.add('hidden');
-                manualInputOverlay.classList.add('hidden');
-            }
-        }
-        
-        // Keyboard controls in fullscreen mode
-        if (isFullscreen) {
-            if (e.key === ' ' || e.code === 'Space') {
-                e.preventDefault();
-                if (isPlaying) pause(); else play();
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                stepNavigation(-1);
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                stepNavigation(1);
-            }
+            settingsOverlay.classList.add('hidden');
+            manualInputOverlay.classList.add('hidden');
         }
     });
 

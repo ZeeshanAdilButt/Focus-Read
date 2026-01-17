@@ -1,0 +1,199 @@
+/* Flow Mate Fullscreen Mode */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #000;
+    color: #fff;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: none;
+}
+
+body.show-cursor {
+    cursor: default;
+}
+
+/* Reader Display */
+.reader-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.word-display {
+    font-size: 6rem;
+    font-weight: 500;
+    text-align: center;
+    max-width: 90vw;
+    line-height: 1.3;
+    letter-spacing: -1px;
+}
+
+.word-display .focus-letter {
+    color: #e74c3c;
+}
+
+.placeholder {
+    color: #333;
+    font-size: 2rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+/* Floating Controls */
+.controls {
+    position: fixed;
+    top: 50%;
+    right: 40px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+body.show-cursor .controls {
+    opacity: 1;
+}
+
+.ctrl-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: #888;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.ctrl-btn:hover {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    transform: scale(1.05);
+}
+
+.play-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 32px rgba(231, 76, 60, 0.4);
+}
+
+.play-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 12px 40px rgba(231, 76, 60, 0.5);
+}
+
+.ctrl-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 8px 0;
+}
+
+.exit-btn:hover {
+    background: rgba(255, 100, 100, 0.2);
+    color: #ff6b6b;
+}
+
+/* Progress Bar */
+.progress-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #e74c3c, #f39c12);
+    transition: width 0.15s ease;
+}
+
+/* Info Display */
+.info-display {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 30px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.9rem;
+    color: #666;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+body.show-cursor .info-display {
+    opacity: 1;
+}
+
+.info-divider {
+    color: #333;
+}
+
+#progressText {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+#wpmDisplay {
+    color: #888;
+}
+
+#timeRemaining {
+    color: #888;
+}
+
+/* Sentence mode adjustments */
+.word-display.sentence-mode {
+    font-size: 2.5rem;
+    max-width: 80vw;
+    line-height: 1.6;
+}
+
+/* Multi-word chunk adjustments */
+.word-display.chunk-mode {
+    font-size: 4rem;
+}

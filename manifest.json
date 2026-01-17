@@ -33,7 +33,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["viewer.html", "viewer.js", "viewer.css", "pdf.worker.min.js"],
+      "resources": ["viewer.html", "viewer.js", "viewer.css", "pdf.worker.min.js", "fullscreen.html", "fullscreen.js", "fullscreen.css"],
       "matches": ["<all_urls>"]
     }
   ]

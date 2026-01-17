@@ -391,6 +391,19 @@ body {
     transition: box-shadow 0.3s ease;
 }
 
+.pdf-page.placeholder {
+    background: #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-loading {
+    color: rgba(255,255,255,0.3);
+    font-size: 14px;
+    font-weight: 500;
+}
+
 .pdf-page:hover {
     box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
 }

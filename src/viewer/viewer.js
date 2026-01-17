@@ -286,11 +286,101 @@ async function loadPdf(data) {
     updateNavButtons();
     updateZoomDisplay();
 
+    // Create placeholder divs for all pages first (for scrolling)
     for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'pdf-page placeholder';
+        pageDiv.id = `page-${i}`;
+        pageDiv.dataset.pageNumber = i;
+        pageDiv.style.width = '612px'; // Default letter size
+        pageDiv.style.height = '792px';
+        pageDiv.innerHTML = `<div class="page-loading">Page ${i}</div>`;
+        pdfContainer.appendChild(pageDiv);
+    }
+    
+    // Render first 3 pages immediately
+    const initialPages = Math.min(3, pdfDoc.numPages);
+    for (let i = 1; i <= initialPages; i++) {
         await renderPage(i);
     }
     
+    // Extract text from remaining pages in background (for word count)
+    extractAllText();
+    
+    // Setup lazy loading for remaining pages
+    setupLazyLoading();
+}
+
+// Extract text from all pages for word indexing without rendering
+async function extractAllText() {
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const pageDiv = document.getElementById(`page-${i}`);
+        if (pageDiv && !pageDiv.classList.contains('placeholder')) continue; // Already rendered
+        
+        try {
+            const page = await pdfDoc.getPage(i);
+            const viewport = page.getViewport({ scale: currentScale });
+            const textContent = await page.getTextContent();
+            
+            // Extract words without rendering
+            textContent.items.forEach((item) => {
+                const itemText = item.str;
+                if (!itemText.trim()) return;
+                
+                const tx = item.transform[4];
+                const ty = item.transform[5];
+                const fontSize = Math.sqrt(item.transform[0] ** 2 + item.transform[1] ** 2);
+                const [viewX, viewY] = viewport.convertToViewportPoint(tx, ty);
+                const itemHeight = fontSize * currentScale;
+                const charWidth = (item.width / Math.max(1, itemText.length)) * currentScale;
+                
+                const wordsInItem = itemText.split(/(\s+)/);
+                let charOffset = 0;
+                
+                wordsInItem.forEach(part => {
+                    if (/\S/.test(part)) {
+                        allWords.push({
+                            word: part,
+                            page: i,
+                            x: viewX + charOffset * charWidth,
+                            y: viewY - itemHeight,
+                            width: part.length * charWidth,
+                            height: itemHeight
+                        });
+                    }
+                    charOffset += part.length;
+                });
+            });
+        } catch (err) {
+            console.warn('Error extracting text from page', i, err);
+        }
+    }
+    
     detectParagraphs();
+    console.log("Flow Mate: Text extraction complete -", allWords.length, "words");
+}
+
+// Lazy load pages as they come into view
+function setupLazyLoading() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const pageDiv = entry.target;
+                const pageNum = parseInt(pageDiv.dataset.pageNumber);
+                if (pageDiv.classList.contains('placeholder')) {
+                    renderPage(pageNum);
+                }
+            }
+        });
+    }, { 
+        root: pdfContainer,
+        rootMargin: '200px',
+        threshold: 0.1
+    });
+    
+    document.querySelectorAll('.pdf-page').forEach(page => {
+        observer.observe(page);
+    });
 }
 
 // ========== PAGE RENDERING ==========
@@ -298,13 +388,29 @@ async function renderPage(num) {
     const page = await pdfDoc.getPage(num);
     const viewport = page.getViewport({ scale: currentScale });
 
-    const pageDiv = document.createElement('div');
-    pageDiv.className = 'pdf-page';
-    pageDiv.style.width = `${viewport.width}px`;
-    pageDiv.style.height = `${viewport.height}px`;
-    pageDiv.dataset.pageNumber = num;
-    pageDiv.id = `page-${num}`;
-    pdfContainer.appendChild(pageDiv);
+    // Check if placeholder exists
+    let pageDiv = document.getElementById(`page-${num}`);
+    const isReplacing = pageDiv && pageDiv.classList.contains('placeholder');
+    
+    if (isReplacing) {
+        // Replace placeholder content
+        pageDiv.innerHTML = '';
+        pageDiv.classList.remove('placeholder');
+        pageDiv.style.width = `${viewport.width}px`;
+        pageDiv.style.height = `${viewport.height}px`;
+    } else if (!pageDiv) {
+        // Create new page div
+        pageDiv = document.createElement('div');
+        pageDiv.className = 'pdf-page';
+        pageDiv.style.width = `${viewport.width}px`;
+        pageDiv.style.height = `${viewport.height}px`;
+        pageDiv.dataset.pageNumber = num;
+        pageDiv.id = `page-${num}`;
+        pdfContainer.appendChild(pageDiv);
+    } else {
+        // Already rendered, skip
+        return;
+    }
 
     // Canvas
     const canvas = document.createElement('canvas');
@@ -344,25 +450,27 @@ async function renderPage(num) {
         textSpan.style.fontFamily = item.fontName || 'sans-serif';
         textLayerDiv.appendChild(textSpan);
         
-        // Word extraction
-        const charWidth = (item.width / Math.max(1, itemText.length)) * currentScale;
-        const wordsInItem = itemText.split(/(\s+)/);
-        let charOffset = 0;
-        
-        wordsInItem.forEach(segment => {
-            const word = segment.trim();
-            if (word) {
-                allWords.push({
-                    word: word,
-                    page: num,
-                    x: viewX + (charOffset * charWidth),
-                    y: viewY - itemHeight,
-                    width: word.length * charWidth,
-                    height: itemHeight * 1.2
-                });
-            }
-            charOffset += segment.length;
-        });
+        // Word extraction - only add if not already extracted
+        if (!isReplacing) {
+            const charWidth = (item.width / Math.max(1, itemText.length)) * currentScale;
+            const wordsInItem = itemText.split(/(\s+)/);
+            let charOffset = 0;
+            
+            wordsInItem.forEach(segment => {
+                const word = segment.trim();
+                if (word) {
+                    allWords.push({
+                        word: word,
+                        page: num,
+                        x: viewX + (charOffset * charWidth),
+                        y: viewY - itemHeight,
+                        width: word.length * charWidth,
+                        height: itemHeight * 1.2
+                    });
+                }
+                charOffset += segment.length;
+            });
+        }
     });
 }
 
