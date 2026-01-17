@@ -26,7 +26,7 @@ let allWords = [];
 let pdfLoaded = false;
 let currentPage = 1;
 let totalPages = 0;
-let textSelectionMode = false;
+let textSelectionMode = true;
 let lastClickedWordIndex = -1;
 let paragraphStarts = [0];
 let currentScale = 1.5;
@@ -50,6 +50,9 @@ function showToast(message, duration = 3000) {
 function showLoading(show) {
     loadingOverlay.classList.toggle('hidden', !show);
 }
+
+// Initialize text selection button as active (since textSelectionMode = true by default)
+toggleSelectBtn.classList.add('active');
 
 // ========== FILE INPUT HANDLER ==========
 fileInput.addEventListener('change', async (e) => {

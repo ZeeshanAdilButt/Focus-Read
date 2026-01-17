@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bgColor: '#000000',
         textColor: '#ffffff',
         focusColor: '#e74c3c',
-        navMode: 'seconds', // 'seconds', 'words', 'sentences', 'paragraphs'
+        navMode: 'paragraphs', // 'seconds', 'words', 'sentences', 'paragraphs'
         navAmount: 10
     };
 
@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bgColor: '#000000',
             textColor: '#ffffff',
             focusColor: '#e74c3c',
-            navMode: 'seconds',
+            navMode: 'paragraphs',
             navAmount: 10
         };
         syncSettingsUI();
