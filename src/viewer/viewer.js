@@ -83,36 +83,32 @@ fileInput.addEventListener('change', async (e) => {
 prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1));
 nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1));
 
-// Debounce page input to allow typing multi-digit numbers
+// Track if user is typing in page input
+let isTypingPage = false;
 let pageInputTimeout = null;
-pageInput.addEventListener('input', (e) => {
+
+pageInput.addEventListener('focus', () => {
+    isTypingPage = true;
+    pageInput.select(); // Select all text for easy replacement
+});
+
+pageInput.addEventListener('blur', (e) => {
+    isTypingPage = false;
     clearTimeout(pageInputTimeout);
-    pageInputTimeout = setTimeout(() => {
-        const page = parseInt(e.target.value);
-        if (page >= 1 && page <= totalPages) {
-            goToPage(page);
-        }
-    }, 500); // Wait 500ms after typing stops
+    const page = parseInt(e.target.value);
+    if (page >= 1 && page <= totalPages) {
+        goToPage(page);
+    } else {
+        pageInput.value = currentPage;
+    }
 });
 
 pageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-        clearTimeout(pageInputTimeout);
-        const page = parseInt(e.target.value);
-        if (page >= 1 && page <= totalPages) {
-            goToPage(page);
-        } else {
-            pageInput.value = currentPage;
-        }
-        e.target.blur();
-    }
-});
-
-pageInput.addEventListener('blur', (e) => {
-    clearTimeout(pageInputTimeout);
-    const page = parseInt(e.target.value);
-    if (!page || page < 1 || page > totalPages) {
+        e.target.blur(); // This will trigger the blur handler
+    } else if (e.key === 'Escape') {
         pageInput.value = currentPage;
+        e.target.blur();
     }
 });
 
@@ -266,7 +262,10 @@ pdfContainer.addEventListener('scroll', () => {
     
     if (closestPage !== currentPage) {
         currentPage = closestPage;
-        pageInput.value = currentPage;
+        // Only update input if user is not actively typing
+        if (!isTypingPage) {
+            pageInput.value = currentPage;
+        }
         updateNavButtons();
     }
 });
