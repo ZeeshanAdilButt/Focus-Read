@@ -80,18 +80,36 @@ fileInput.addEventListener('change', async (e) => {
 prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1));
 nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1));
 
-pageInput.addEventListener('change', (e) => {
-    const page = parseInt(e.target.value);
-    if (page >= 1 && page <= totalPages) {
-        goToPage(page);
-    } else {
-        pageInput.value = currentPage;
-    }
+// Debounce page input to allow typing multi-digit numbers
+let pageInputTimeout = null;
+pageInput.addEventListener('input', (e) => {
+    clearTimeout(pageInputTimeout);
+    pageInputTimeout = setTimeout(() => {
+        const page = parseInt(e.target.value);
+        if (page >= 1 && page <= totalPages) {
+            goToPage(page);
+        }
+    }, 500); // Wait 500ms after typing stops
 });
 
 pageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
+        clearTimeout(pageInputTimeout);
+        const page = parseInt(e.target.value);
+        if (page >= 1 && page <= totalPages) {
+            goToPage(page);
+        } else {
+            pageInput.value = currentPage;
+        }
         e.target.blur();
+    }
+});
+
+pageInput.addEventListener('blur', (e) => {
+    clearTimeout(pageInputTimeout);
+    const page = parseInt(e.target.value);
+    if (!page || page < 1 || page > totalPages) {
+        pageInput.value = currentPage;
     }
 });
 
@@ -117,14 +135,14 @@ function updateNavButtons() {
 zoomInBtn.addEventListener('click', () => {
     if (currentScale < MAX_SCALE) {
         currentScale = Math.min(MAX_SCALE, currentScale + SCALE_STEP);
-        reRenderPdf();
+        smartReRenderPdf();
     }
 });
 
 zoomOutBtn.addEventListener('click', () => {
     if (currentScale > MIN_SCALE) {
         currentScale = Math.max(MIN_SCALE, currentScale - SCALE_STEP);
-        reRenderPdf();
+        smartReRenderPdf();
     }
 });
 
@@ -132,29 +150,62 @@ function updateZoomDisplay() {
     zoomLevelSpan.textContent = Math.round(currentScale * 100 / 1.5) + '%';
 }
 
-async function reRenderPdf() {
+// Smart re-render: only re-render visible pages, reset others to placeholders
+async function smartReRenderPdf() {
     if (!pdfDoc) return;
     
     showLoading(true);
     updateZoomDisplay();
     
-    // Remember scroll position
-    const scrollRatio = pdfContainer.scrollTop / (pdfContainer.scrollHeight || 1);
+    // Remember current page and scroll position
+    const targetPage = currentPage;
+    
+    // Get visible pages (current ± 2)
+    const visibleStart = Math.max(1, targetPage - 2);
+    const visibleEnd = Math.min(totalPages, targetPage + 2);
+    
+    // Reset all pages to placeholders with new estimated sizes
+    const estimatedWidth = Math.round(612 * currentScale);
+    const estimatedHeight = Math.round(792 * currentScale);
     
     pdfContainer.innerHTML = '';
     allWords = [];
     paragraphStarts = [0];
     
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
+    // Create all placeholder divs
+    for (let i = 1; i <= totalPages; i++) {
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'pdf-page placeholder';
+        pageDiv.id = `page-${i}`;
+        pageDiv.dataset.pageNumber = i;
+        pageDiv.style.width = `${estimatedWidth}px`;
+        pageDiv.style.height = `${estimatedHeight}px`;
+        pageDiv.innerHTML = `<div class="page-loading">Page ${i}</div>`;
+        pdfContainer.appendChild(pageDiv);
+    }
+    
+    // Render only visible pages
+    for (let i = visibleStart; i <= visibleEnd; i++) {
         await renderPage(i);
     }
     
+    // Sort and detect paragraphs for rendered pages
+    sortWordsByReadingOrder();
     detectParagraphs();
     
-    // Restore approximate scroll position
-    pdfContainer.scrollTop = scrollRatio * pdfContainer.scrollHeight;
+    // Scroll to target page
+    const targetDiv = document.getElementById(`page-${targetPage}`);
+    if (targetDiv) {
+        targetDiv.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
     
     showLoading(false);
+    
+    // Re-setup lazy loading for other pages
+    setupLazyLoading();
+    
+    // Extract remaining text in background
+    setTimeout(() => extractRemainingText(1), 100);
 }
 
 // ========== TEXT SELECTION TOGGLE ==========
@@ -298,66 +349,114 @@ async function loadPdf(data) {
         pdfContainer.appendChild(pageDiv);
     }
     
-    // Render first 3 pages immediately
+    // Render first 3 pages immediately and extract their text
     const initialPages = Math.min(3, pdfDoc.numPages);
     for (let i = 1; i <= initialPages; i++) {
         await renderPage(i);
     }
     
-    // Extract text from remaining pages in background (for word count)
-    extractAllText();
+    // Sort words after initial pages rendered
+    sortWordsByReadingOrder();
+    detectParagraphs();
     
     // Setup lazy loading for remaining pages
     setupLazyLoading();
+    
+    // Extract remaining text in background (non-blocking)
+    if (totalPages > initialPages) {
+        setTimeout(() => extractRemainingText(initialPages + 1), 100);
+    }
 }
 
-// Extract text from all pages for word indexing without rendering
-async function extractAllText() {
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
+// Extract text from remaining pages incrementally (non-blocking)
+async function extractRemainingText(startPage) {
+    for (let i = startPage; i <= pdfDoc.numPages; i++) {
+        // Check if page already rendered (has words extracted)
         const pageDiv = document.getElementById(`page-${i}`);
-        if (pageDiv && !pageDiv.classList.contains('placeholder')) continue; // Already rendered
+        if (pageDiv && !pageDiv.classList.contains('placeholder')) continue;
         
         try {
-            const page = await pdfDoc.getPage(i);
-            const viewport = page.getViewport({ scale: currentScale });
-            const textContent = await page.getTextContent();
+            await extractTextFromPage(i);
             
-            // Extract words without rendering
-            textContent.items.forEach((item) => {
-                const itemText = item.str;
-                if (!itemText.trim()) return;
-                
-                const tx = item.transform[4];
-                const ty = item.transform[5];
-                const fontSize = Math.sqrt(item.transform[0] ** 2 + item.transform[1] ** 2);
-                const [viewX, viewY] = viewport.convertToViewportPoint(tx, ty);
-                const itemHeight = fontSize * currentScale;
-                const charWidth = (item.width / Math.max(1, itemText.length)) * currentScale;
-                
-                const wordsInItem = itemText.split(/(\s+)/);
-                let charOffset = 0;
-                
-                wordsInItem.forEach(part => {
-                    if (/\S/.test(part)) {
-                        allWords.push({
-                            word: part,
-                            page: i,
-                            x: viewX + charOffset * charWidth,
-                            y: viewY - itemHeight,
-                            width: part.length * charWidth,
-                            height: itemHeight
-                        });
-                    }
-                    charOffset += part.length;
-                });
-            });
+            // Yield to UI every 5 pages
+            if (i % 5 === 0) {
+                sortWordsByReadingOrder();
+                detectParagraphs();
+                await new Promise(r => setTimeout(r, 10));
+            }
         } catch (err) {
             console.warn('Error extracting text from page', i, err);
         }
     }
     
+    // Final sort after all extraction
+    sortWordsByReadingOrder();
     detectParagraphs();
     console.log("Flow Mate: Text extraction complete -", allWords.length, "words");
+}
+
+// Extract text from a single page
+async function extractTextFromPage(pageNum) {
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: currentScale });
+    const textContent = await page.getTextContent();
+    
+    const pageWords = [];
+    
+    textContent.items.forEach((item) => {
+        const itemText = item.str;
+        if (!itemText.trim()) return;
+        
+        const tx = item.transform[4];
+        const ty = item.transform[5];
+        const fontSize = Math.sqrt(item.transform[0] ** 2 + item.transform[1] ** 2);
+        const [viewX, viewY] = viewport.convertToViewportPoint(tx, ty);
+        const itemHeight = fontSize * currentScale;
+        const charWidth = (item.width / Math.max(1, itemText.length)) * currentScale;
+        
+        const wordsInItem = itemText.split(/(\s+)/);
+        let charOffset = 0;
+        
+        wordsInItem.forEach(part => {
+            if (/\S/.test(part)) {
+                pageWords.push({
+                    word: part,
+                    page: pageNum,
+                    x: viewX + charOffset * charWidth,
+                    y: viewY - itemHeight,
+                    width: part.length * charWidth,
+                    height: itemHeight
+                });
+            }
+            charOffset += part.length;
+        });
+    });
+    
+    // Sort page words by reading order (top to bottom, left to right)
+    pageWords.sort((a, b) => {
+        // Group by approximate line (within half line height)
+        const lineTolerance = (a.height + b.height) / 4;
+        if (Math.abs(a.y - b.y) < lineTolerance) {
+            return a.x - b.x; // Same line: left to right
+        }
+        return a.y - b.y; // Different lines: top to bottom
+    });
+    
+    allWords.push(...pageWords);
+}
+
+// Sort all words by page, then reading order
+function sortWordsByReadingOrder() {
+    allWords.sort((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        
+        // Group by approximate line
+        const lineTolerance = (a.height + b.height) / 4;
+        if (Math.abs(a.y - b.y) < lineTolerance) {
+            return a.x - b.x; // Same line: left to right
+        }
+        return a.y - b.y; // Different lines: top to bottom
+    });
 }
 
 // Lazy load pages as they come into view
@@ -387,6 +486,7 @@ function setupLazyLoading() {
 async function renderPage(num) {
     const page = await pdfDoc.getPage(num);
     const viewport = page.getViewport({ scale: currentScale });
+    const pageWords = []; // Collect words for this page
 
     // Check if placeholder exists
     let pageDiv = document.getElementById(`page-${num}`);
@@ -459,7 +559,7 @@ async function renderPage(num) {
             wordsInItem.forEach(segment => {
                 const word = segment.trim();
                 if (word) {
-                    allWords.push({
+                    pageWords.push({
                         word: word,
                         page: num,
                         x: viewX + (charOffset * charWidth),
@@ -472,6 +572,18 @@ async function renderPage(num) {
             });
         }
     });
+    
+    // Sort and add words from this page in reading order
+    if (!isReplacing && pageWords.length > 0) {
+        pageWords.sort((a, b) => {
+            const lineTolerance = (a.height + b.height) / 4;
+            if (Math.abs(a.y - b.y) < lineTolerance) {
+                return a.x - b.x;
+            }
+            return a.y - b.y;
+        });
+        allWords.push(...pageWords);
+    }
 }
 
 // ========== PARAGRAPH DETECTION ==========
