@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
     const chunkSizeInput = document.getElementById('chunkSizeInput');
     const scanPageBtn = document.getElementById('scanPageBtn');
+    const openPdfBtn = document.getElementById('openPdfBtn');
     const setTextBtn = document.getElementById('setTextBtn');
     const clearTextBtn = document.getElementById('clearTextBtn');
     const manualInputOverlay = document.getElementById('manualInputOverlay');
@@ -37,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const focusColorPicker = document.getElementById('focusColorPicker');
     const focusColorText = document.getElementById('focusColorText');
     const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+    const navModeSelect = document.getElementById('navModeSelect');
+    const navAmountInput = document.getElementById('navAmountInput');
 
     // State
     let words = [];
@@ -56,7 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
         fontScale: 1,
         bgColor: '#000000',
         textColor: '#ffffff',
-        focusColor: '#e74c3c'
+        focusColor: '#e74c3c',
+        navMode: 'seconds', // 'seconds', 'words', 'sentences', 'paragraphs'
+        navAmount: 10
     };
 
     // UI Elements for Mode
@@ -68,31 +73,54 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ORP Logic (Optimal Recognition Point) ---
     function formatWord(word) {
         if (!word) return "&nbsp;";
-        // If mode is sentence, don't use ORP, just text
-        if (config.mode === 'sentence') return word;
-
-        const idx = Math.ceil(word.length / 2) - 1;
+        // Clean the word of extra whitespace
+        word = word.trim();
+        if (!word) return "&nbsp;";
+        
+        // Calculate ORP (Optimal Recognition Point) - typically around 1/3 into the word
+        // For short words (1-3 chars), highlight first char
+        // For medium words (4-7 chars), highlight ~25-35% position
+        // For long words (8+), highlight ~30% position
+        let idx;
+        const len = word.length;
+        if (len <= 1) {
+            idx = 0;
+        } else if (len <= 3) {
+            idx = 0; // First letter for short words
+        } else if (len <= 7) {
+            idx = Math.floor(len * 0.3); // ~30% for medium
+        } else {
+            idx = Math.floor(len * 0.28); // ~28% for long words
+        }
+        
         const start = word.slice(0, idx);
         const char = word.slice(idx, idx + 1);
         const end = word.slice(idx + 1);
         
         return `${start}<span class="highlight-char" style="color: ${config.focusColor}">${char}</span>${end}`;
     }
+    
+    // Format multiple words with ORP on each
+    function formatChunk(text) {
+        if (!text) return "&nbsp;";
+        const words = text.trim().split(/\s+/);
+        return words.map(w => formatWord(w)).join(' ');
+    }
 
     // --- Core Reader Logic ---
 
-    // Calculate base interval (ms per chunk)
-    function getIntervalForChunk(chunk, isSentence) {
-        if (!chunk) return 100;
-
-        if (isSentence) {
-            // Estimate words in sentence
-            const wordCount = chunk.split(/\s+/).length;
-            // Time = (Words / WPM) * 60000
-            // Add a bit of buffer for reading ease?
-            return (wordCount / config.wpm) * 60000;
+    // Calculate base interval (ms per word/chunk)
+    function getIntervalForChunk(chunkText, isSentence) {
+        // Base calculation: ms per word = 60000 / WPM
+        const msPerWord = 60000 / config.wpm;
+        
+        if (isSentence && chunkText) {
+            // For sentences, count actual words
+            const wordCount = chunkText.trim().split(/\s+/).length;
+            return msPerWord * wordCount;
         } else {
-             return (60000 / config.wpm) * config.chunkSize;
+            // For word mode, multiply by chunk size
+            return msPerWord * config.chunkSize;
         }
     }
 
@@ -101,15 +129,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.backgroundColor = config.bgColor;
         wordDisplay.style.color = config.textColor;
         wordDisplay.style.fontFamily = config.font;
-        // Sentence mode might need smaller font
-        const baseSize = config.mode === 'sentence' ? 1.5 : 3;
+        
+        // Adjust font size based on mode and chunk size
+        let baseSize = 3; // Default for single word
+        if (config.mode === 'sentence') {
+            baseSize = 1.5;
+        } else if (config.chunkSize > 1) {
+            // Scale down for multiple words: 2 words = 2.5rem, 3 words = 2rem, etc.
+            baseSize = Math.max(1.5, 3 - (config.chunkSize - 1) * 0.5);
+        }
         wordDisplay.style.fontSize = `${baseSize * config.fontScale}rem`;
-        // Ensure multiline for sentences
-        wordDisplay.style.whiteSpace = config.mode === 'sentence' ? 'normal' : 'nowrap';
+        
+        // Enable wrapping for multi-word or sentence mode
+        wordDisplay.style.whiteSpace = (config.mode === 'sentence' || config.chunkSize > 1) ? 'normal' : 'nowrap';
         // ... (other UI color sync)
 
         if (words.length === 0) {
-            wordDisplay.innerHTML = '<span class="placeholder">Ready</span>';
+            wordDisplay.innerHTML = '<span class="placeholder">Ready to flow</span>';
             return;
         }
 
@@ -155,10 +191,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        if (config.mode === 'word' && config.chunkSize === 1) {
+        // Apply ORP formatting to all words
+        if (config.mode === 'sentence') {
+            // For sentences, format each word with ORP
+            wordDisplay.innerHTML = formatChunk(chunk);
+        } else if (config.chunkSize === 1) {
             wordDisplay.innerHTML = formatWord(chunk);
         } else {
-            wordDisplay.innerText = chunk;
+            // Multi-word chunk - format each word
+            wordDisplay.innerHTML = formatChunk(chunk);
         }
 
         return { chunk, nextIndexChange };
@@ -185,30 +226,26 @@ document.addEventListener('DOMContentLoaded', () => {
     function scheduleNextStep(currentChunkText) {
         if (!isPlaying) return;
 
-        let delay;
+        // Base delay from WPM
+        let delay = getIntervalForChunk(currentChunkText, config.mode === 'sentence');
         
-        // Calculate delay based on the text we just showed
-        if (config.mode === 'sentence') {
-             // For sentence mode, we use the word count of the sentence to determine time
-             delay = getIntervalForChunk(currentChunkText, true);
-             // Pause longer for sentences? Or is it built into WPM?
-             // Use pauseScale for between sentences if requested
-             if (config.pauses) {
-                 delay = delay * config.pauseScale; 
-             }
-        } else {
-             // Word mode
-             delay = getIntervalForChunk(null, false); // uses config.chunkSize inside
-             
-             // Punctuation logic for Word mode
-             if (config.pauses && currentChunkText) {
-                 const lastChar = currentChunkText.slice(-1);
-                 if (['.', '!', '?', ';'].includes(lastChar)) {
-                    delay = delay * config.pauseScale;
-                 } else if ([','].includes(lastChar)) {
-                    delay = delay * (1 + (config.pauseScale - 1) / 2);
-                 }
-             }
+        // Apply pause scaling for punctuation
+        if (config.pauses && currentChunkText) {
+            const trimmedText = currentChunkText.trim();
+            const lastChar = trimmedText.slice(-1);
+            
+            // Strong pause for sentence-ending punctuation
+            if (['.', '!', '?'].includes(lastChar)) {
+                delay = delay * config.pauseScale;
+            } 
+            // Medium pause for semicolons and colons
+            else if ([';', ':'].includes(lastChar)) {
+                delay = delay * (1 + (config.pauseScale - 1) * 0.7);
+            }
+            // Light pause for commas
+            else if ([','].includes(lastChar)) {
+                delay = delay * (1 + (config.pauseScale - 1) * 0.4);
+            }
         }
 
         timer = setTimeout(() => {
@@ -265,6 +302,18 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timer);
             timer = null;
         }
+        // Clear highlight when paused
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+            if (tabs[0]) {
+                const isExtensionPage = tabs[0].url && tabs[0].url.startsWith('chrome-extension://');
+                const msg = { action: "clearHighlight" };
+                if (isExtensionPage) {
+                    chrome.runtime.sendMessage(msg).catch(() => {});
+                } else {
+                    chrome.tabs.sendMessage(tabs[0].id, msg).catch(() => {});
+                }
+            }
+        });
     }
 
     function loadText(text, indexToStart = 0) {
@@ -286,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
         words = [];
         currentIndex = 0;
         lastStepDelta = 1;
-        wordDisplay.innerHTML = '<span class="placeholder">Ready</span>';
+        wordDisplay.innerHTML = '<span class="placeholder">Ready to flow</span>';
         progressBar.value = 0;
         progressText.innerText = '0%';
         timeRemaining.innerText = '--:--';
@@ -305,6 +354,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Get the current chunk being displayed
         let chunkText = '';
+        let contextBefore = '';
+        let contextAfter = '';
+        let wordCount = 1;
+        
         if (config.mode === 'sentence') {
             let tempIndex = currentIndex;
             let collected = [];
@@ -315,20 +368,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (collected.length > 30) break;
                 tempIndex++;
             }
-            chunkText = collected.join(' ');
+            wordCount = collected.length;
         } else {
             chunkText = words.slice(currentIndex, currentIndex + config.chunkSize).join(' ');
+            wordCount = config.chunkSize;
         }
         
+        // Get surrounding context for more accurate highlighting (5 words before and after)
+        const contextStart = Math.max(0, currentIndex - 5);
+        const contextEnd = Math.min(words.length, currentIndex + config.chunkSize + 5);
+        contextBefore = words.slice(contextStart, currentIndex).join(' ');
+        contextAfter = words.slice(currentIndex + config.chunkSize, contextEnd).join(' ');
+        
+        const highlightMsg = {
+            action: "highlight", 
+            index: currentIndex,
+            text: chunkText,
+            wordCount: wordCount,
+            contextBefore: contextBefore,
+            contextAfter: contextAfter,
+            mode: config.mode
+        };
+        
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            if (tabs[0]) { 
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    action: "highlight", 
-                    index: currentIndex,
-                    text: chunkText,
-                    words: words,
-                    mode: config.mode
-                }).catch(() => {});
+            if (tabs[0]) {
+                // Check if it's an extension page (PDF viewer)
+                const isExtensionPage = tabs[0].url && tabs[0].url.startsWith('chrome-extension://');
+                
+                if (isExtensionPage) {
+                    // Send via runtime for extension pages
+                    chrome.runtime.sendMessage(highlightMsg).catch(() => {});
+                } else {
+                    // Send via tabs for regular pages  
+                    chrome.tabs.sendMessage(tabs[0].id, highlightMsg).catch(() => {});
+                }
             }
         });
     }
@@ -372,6 +445,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         focusColorPicker.value = config.focusColor;
         focusColorText.value = config.focusColor;
+        
+        // Navigation settings
+        navModeSelect.value = config.navMode;
+        navAmountInput.value = config.navAmount;
+        updateNavTooltips();
 
         updateDisplay(); // Force refresh styles
     }
@@ -450,6 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
         config = {
             wpm: 300,
             chunkSize: 1,
+            mode: 'word',
             pauses: true,
             loop: false,
             pauseScale: 1.5,
@@ -457,10 +536,34 @@ document.addEventListener('DOMContentLoaded', () => {
             fontScale: 1,
             bgColor: '#000000',
             textColor: '#ffffff',
-            focusColor: '#e74c3c'
+            focusColor: '#e74c3c',
+            navMode: 'seconds',
+            navAmount: 10
         };
         syncSettingsUI();
     });
+
+    // Navigation settings listeners
+    navModeSelect.addEventListener('change', (e) => {
+        config.navMode = e.target.value;
+        updateNavTooltips();
+    });
+    
+    navAmountInput.addEventListener('change', (e) => {
+        config.navAmount = parseInt(e.target.value) || 10;
+    });
+    
+    function updateNavTooltips() {
+        const modeLabels = {
+            'seconds': `${config.navAmount}s`,
+            'words': `${config.navAmount} words`,
+            'sentences': `${config.navAmount} sentence${config.navAmount > 1 ? 's' : ''}`,
+            'paragraphs': `${config.navAmount} para${config.navAmount > 1 ? 's' : ''}`
+        };
+        prevBtn.title = `Back ${modeLabels[config.navMode]}`;
+        nextBtn.title = `Forward ${modeLabels[config.navMode]}`;
+    }
+    updateNavTooltips(); // Initialize
 
     // 1. Auto-load from active tab on open
     async function fetchPageContent() {
@@ -469,18 +572,57 @@ document.addEventListener('DOMContentLoaded', () => {
          
          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
          if (tab) {
-             // Ask for content
-             chrome.tabs.sendMessage(tab.id, { action: "getContent" }, (response) => {
-                if (chrome.runtime.lastError) {
-                    // Script likely not injected in this tab (e.g. chrome:// URL or restricted)
-                    console.log("Could not auto-load content:", chrome.runtime.lastError.message);
-                    wordDisplay.innerHTML = '<span class="placeholder">Error/Reload</span>';
-                } else if (response && response.content) {
-                    loadText(response.content);
-                } else {
-                     wordDisplay.innerHTML = '<span class="placeholder">No text found</span>';
-                }
-             });
+             const url = tab.url || '';
+             
+             // Check if it's a PDF URL (browser's built-in PDF viewer)
+             const isPdfUrl = url.toLowerCase().endsWith('.pdf') || 
+                              url.includes('blob:') ||
+                              url.includes('/pdf/') ||
+                              (tab.title && tab.title.endsWith('.pdf'));
+             
+             // Check if it's our PDF viewer (extension page)
+             const isOurViewer = url.startsWith('chrome-extension://') && url.includes('viewer.html');
+             const isExtensionPage = url.startsWith('chrome-extension://');
+             
+             if (isPdfUrl && !isOurViewer) {
+                 // Show message to use our PDF viewer
+                 wordDisplay.innerHTML = '<span class="placeholder">Use PDF button →</span>';
+                 return;
+             }
+             
+             if (isOurViewer || isExtensionPage) {
+                 // Use runtime message for extension pages
+                 chrome.runtime.sendMessage({ action: "getContent" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.log("Could not get content from extension page:", chrome.runtime.lastError.message);
+                        wordDisplay.innerHTML = '<span class=\"placeholder\">Click Read Page after loading PDF</span>';
+                    } else if (response && response.content) {
+                        loadText(response.content);
+                    } else if (response && response.error) {
+                        console.log("PDF not ready:", response.error);
+                        wordDisplay.innerHTML = '<span class=\"placeholder\">Load a PDF file first</span>';
+                    } else {
+                        wordDisplay.innerHTML = '<span class=\"placeholder\">Load a PDF file first</span>';
+                    }
+                 });
+             } else {
+                 // Regular web page - use tabs message
+                 chrome.tabs.sendMessage(tab.id, { action: "getContent" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        // Script likely not injected in this tab (e.g. chrome:// URL or restricted)
+                        console.log("Could not auto-load content:", chrome.runtime.lastError.message);
+                        wordDisplay.innerHTML = '<span class="placeholder">Reload page</span>';
+                    } else if (response && response.content) {
+                        // Store paragraph boundaries if provided
+                        if (response.paragraphStarts) {
+                            storedParagraphStarts = response.paragraphStarts;
+                        }
+                        loadText(response.content);
+                    } else {
+                         wordDisplay.innerHTML = '<span class="placeholder">No text found</span>';
+                    }
+                 });
+             }
          }
     }
 
@@ -488,6 +630,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scanPageBtn.addEventListener('click', () => {
         fetchPageContent();
+    });
+    
+    // Open PDF Viewer Button
+    openPdfBtn.addEventListener('click', () => {
+        // Open the PDF viewer in a new tab
+        const viewerUrl = chrome.runtime.getURL('viewer.html');
+        chrome.tabs.create({ url: viewerUrl });
     });
     
     // Clear Button
@@ -502,19 +651,122 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 3. Navigation
+    // Store paragraph starts from content script
+    let storedParagraphStarts = [0];
+    
+    function calculateNavJump(direction) {
+        let jump = 0;
+        
+        switch (config.navMode) {
+            case 'seconds':
+                // Convert seconds to words: words = (wpm / 60) * seconds
+                jump = Math.round((config.wpm / 60) * config.navAmount);
+                break;
+            case 'words':
+                jump = config.navAmount;
+                break;
+            case 'sentences':
+                // Find next/prev sentence boundary
+                let count = 0;
+                let idx = currentIndex;
+                if (direction > 0) {
+                    while (idx < words.length && count < config.navAmount) {
+                        if (/[.?!]$/.test(words[idx])) count++;
+                        idx++;
+                    }
+                    jump = idx - currentIndex;
+                } else {
+                    idx = Math.max(0, currentIndex - 1);
+                    while (idx > 0 && count < config.navAmount) {
+                        idx--;
+                        if (/[.?!]$/.test(words[idx])) count++;
+                    }
+                    jump = currentIndex - idx;
+                }
+                break;
+            case 'paragraphs':
+                // Use actual paragraph boundaries if available
+                if (storedParagraphStarts.length > 1) {
+                    if (direction > 0) {
+                        // Find next paragraph start after current position
+                        for (let p = 0; p < config.navAmount; p++) {
+                            let nextPara = storedParagraphStarts.find(s => s > currentIndex + jump);
+                            if (nextPara !== undefined) {
+                                jump = nextPara - currentIndex;
+                            } else {
+                                // No more paragraphs, jump to end
+                                jump = words.length - currentIndex;
+                                break;
+                            }
+                        }
+                    } else {
+                        // Find previous paragraph start before current position
+                        let currentPos = currentIndex;
+                        for (let p = 0; p < config.navAmount; p++) {
+                            let prevPara = [...storedParagraphStarts].reverse().find(s => s < currentPos);
+                            if (prevPara !== undefined) {
+                                currentPos = prevPara;
+                            } else {
+                                currentPos = 0;
+                                break;
+                            }
+                        }
+                        jump = currentIndex - currentPos;
+                    }
+                } else {
+                    // Fallback: approximate paragraphs as 5 sentences
+                    const sentencesPerPara = 5;
+                    let pCount = 0;
+                    let pIdx = currentIndex;
+                    if (direction > 0) {
+                        let sCount = 0;
+                        while (pIdx < words.length && pCount < config.navAmount) {
+                            if (/[.?!]$/.test(words[pIdx])) {
+                                sCount++;
+                                if (sCount >= sentencesPerPara) {
+                                    pCount++;
+                                    sCount = 0;
+                                }
+                            }
+                            pIdx++;
+                        }
+                        jump = pIdx - currentIndex;
+                    } else {
+                        let sCount = 0;
+                        pIdx = Math.max(0, currentIndex - 1);
+                        while (pIdx > 0 && pCount < config.navAmount) {
+                            pIdx--;
+                            if (/[.?!]$/.test(words[pIdx])) {
+                                sCount++;
+                                if (sCount >= sentencesPerPara) {
+                                    pCount++;
+                                    sCount = 0;
+                                }
+                            }
+                        }
+                        jump = currentIndex - pIdx;
+                    }
+                }
+                break;
+        }
+        
+        return Math.max(1, jump); // At least 1 word
+    }
+    
     prevBtn.addEventListener('click', () => {
-        // Back 10 words or 10 seconds? User asked "Back 10s" in tooltip but logically word jump is easier
-        const jump = Math.round(config.wpm / 6); // ~10 seconds worth of words
+        const jump = calculateNavJump(-1);
         currentIndex = Math.max(0, currentIndex - jump);
         updateDisplay();
         updateProgress();
+        broadcastHighlight();
     });
 
     nextBtn.addEventListener('click', () => {
-        const jump = Math.round(config.wpm / 6);
+        const jump = calculateNavJump(1);
         currentIndex = Math.min(words.length - 1, currentIndex + jump);
         updateDisplay();
         updateProgress();
+        broadcastHighlight();
     });
 
     restartBtn.addEventListener('click', () => {
@@ -546,6 +798,20 @@ document.addEventListener('DOMContentLoaded', () => {
     closeSettingsBtn.addEventListener('click', () => {
         settingsOverlay.classList.add('hidden');
     });
+    
+    // Close settings with X button
+    const closeSettingsX = document.getElementById('closeSettingsX');
+    closeSettingsX.addEventListener('click', () => {
+        settingsOverlay.classList.add('hidden');
+    });
+    
+    // ESC key to close overlays
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            settingsOverlay.classList.add('hidden');
+            manualInputOverlay.classList.add('hidden');
+        }
+    });
 
     // 5. Manual Text Input
     setTextBtn.addEventListener('click', () => {
@@ -576,54 +842,81 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 7. Context Menu Listener - "Read from here"
-    // This should: clear existing content, load fresh page content, find the selection, and position there
+    // Uses the clicked word index from content script for precise positioning
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
          if (message.action === "contextMenuTriggered") {
              const selectionText = message.selectionText?.trim();
-             
-             if (!selectionText) {
-                 // No selection - just reload the page content
-                 fetchPageContent();
-                 return;
-             }
+             const clickedWordIndex = message.clickedWordIndex ?? -1;
              
              // Clear current state first
              pause();
              
-             // Fetch fresh content from the page and find selection position
+             // Fetch fresh content from the page
              chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                  if (!tabs[0]) return;
                  
+                 // Reset highlight position on the page
+                 chrome.tabs.sendMessage(tabs[0].id, { action: "resetHighlightPosition" }).catch(() => {});
+                 
                  chrome.tabs.sendMessage(tabs[0].id, { action: "getContent" }, (response) => {
                      if (chrome.runtime.lastError || !response?.content) {
-                         // Fallback: just load the selection itself
-                         loadText(selectionText);
+                         if (selectionText) {
+                             loadText(selectionText);
+                         }
                          return;
                      }
                      
                      const fullText = response.content;
                      const fullWords = fullText.trim().split(/\s+/);
                      
-                     // Find where the selection starts in the full text
-                     const selectionIndex = fullText.indexOf(selectionText);
-                     
-                     if (selectionIndex !== -1) {
-                         // Count words before the selection
-                         const textBefore = fullText.substring(0, selectionIndex);
-                         const wordsBefore = textBefore.trim().split(/\s+/).filter(w => w.length > 0);
-                         const startWordIndex = wordsBefore.length;
-                         
-                         // Load full content and position at the selection
-                         words = fullWords;
-                         currentIndex = Math.max(0, startWordIndex);
-                         lastStepDelta = 1;
-                         updateDisplay();
-                         updateProgress();
-                         broadcastHighlight();
-                     } else {
-                         // Selection not found in full text, just load it directly
-                         loadText(selectionText);
+                     // Store paragraph info if provided
+                     if (response.paragraphStarts) {
+                         storedParagraphStarts = response.paragraphStarts;
                      }
+                     
+                     // Determine starting position
+                     let startIndex = 0;
+                     
+                     // Priority 1: Use clicked word index if available
+                     if (clickedWordIndex >= 0 && clickedWordIndex < fullWords.length) {
+                         startIndex = clickedWordIndex;
+                         console.log("Flow Mate: Starting from clicked word index", startIndex);
+                     }
+                     // Priority 2: Try to match selection text
+                     else if (selectionText) {
+                         const cleanWord = (w) => w.toLowerCase().replace(/[^a-z0-9]/g, '');
+                         const selectionWords = selectionText.trim().split(/\s+/);
+                         const selectionClean = selectionWords.map(cleanWord);
+                         
+                         // Match sequence of first 3 words
+                         const matchLen = Math.min(3, selectionClean.length);
+                         
+                         for (let i = 0; i < fullWords.length - matchLen + 1; i++) {
+                             let matches = true;
+                             for (let j = 0; j < matchLen; j++) {
+                                 if (cleanWord(fullWords[i + j]) !== selectionClean[j]) {
+                                     matches = false;
+                                     break;
+                                 }
+                             }
+                             if (matches) {
+                                 startIndex = i;
+                                 break;
+                             }
+                         }
+                     }
+                     
+                     // Load the full content at the determined position
+                     words = fullWords;
+                     currentIndex = startIndex;
+                     lastStepDelta = 1;
+                     updateDisplay();
+                     updateProgress();
+                     
+                     // Small delay before highlighting
+                     setTimeout(() => {
+                         broadcastHighlight();
+                     }, 100);
                  });
              });
          }

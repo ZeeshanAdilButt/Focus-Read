@@ -1,15 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Focus Read PDF Viewer</title>
+    <title>Flow Mate - PDF Reader</title>
     <link rel="stylesheet" href="viewer.css">
 </head>
 <body>
     <div id="toolbar">
-        <input type="file" id="fileInput" accept="application/pdf">
-        <div id="pageInfo">
-            Page: <span id="pageNum">--</span> / <span id="pageCount">--</span>
+        <label for="fileInput" class="file-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>Choose PDF</span>
+            <input type="file" id="fileInput" accept="application/pdf">
+        </label>
+        <div class="page-nav">
+            <button id="prevPage" class="nav-btn" title="Previous Page">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </button>
+            <span id="pageInfo">
+                <input type="number" id="pageInput" min="1" value="1" title="Go to page">
+                <span class="page-sep">of</span>
+                <span id="pageCount">--</span>
+            </span>
+            <button id="nextPage" class="nav-btn" title="Next Page">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </button>
         </div>
+        <div class="toolbar-actions">
+            <button id="toggleSelect" class="tool-btn" title="Toggle text selection mode">
+                <svg id="selectIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 7V4h3"/><path d="M20 7V4h-3"/><path d="M4 17v3h3"/><path d="M20 17v3h-3"/>
+                    <line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="15" x2="13" y2="15"/>
+                </svg>
+                <span id="selectLabel">Select Text</span>
+            </button>
+        </div>
+        <div id="instructions">Open Flow Mate side panel and click "Read Page" to start</div>
     </div>
     <div id="pdfContainer"></div>
     <script src="viewer.js"></script>

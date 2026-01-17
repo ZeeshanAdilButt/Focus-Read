@@ -1,21 +1,148 @@
 body {
     margin: 0;
-    background-color: #525659;
-    font-family: sans-serif;
+    background-color: #1a1a2e;
+    font-family: 'Segoe UI', sans-serif;
     display: flex;
     flex-direction: column;
     height: 100vh;
 }
 
 #toolbar {
-    height: 40px;
-    background-color: #333;
+    min-height: 50px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: white;
     display: flex;
     align-items: center;
-    padding: 0 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    padding: 0 20px;
+    gap: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     z-index: 100;
+    border-bottom: 1px solid rgba(231, 76, 60, 0.3);
+    flex-wrap: wrap;
+}
+
+.file-label {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-label:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+}
+
+.file-label input[type="file"] {
+    display: none;
+}
+
+/* Page Navigation */
+.page-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 6px 10px;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-btn:hover {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+#pageInfo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+#pageInput {
+    width: 50px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+#pageInput:focus {
+    outline: none;
+    border-color: #e74c3c;
+}
+
+.page-sep {
+    color: #666;
+    padding: 0 2px;
+}
+
+/* Toolbar Actions */
+.toolbar-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.tool-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #888;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.tool-btn.active {
+    background: rgba(231, 76, 60, 0.2);
+    border-color: rgba(231, 76, 60, 0.4);
+    color: #e74c3c;
+}
+
+#instructions {
+    color: #555;
+    font-size: 0.8rem;
+    margin-left: auto;
 }
 
 #pdfContainer {
@@ -30,23 +157,30 @@ body {
 
 .pdf-page {
     position: relative;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     background-color: white;
+    border-radius: 4px;
 }
 
-/* Important for text selection and highlighting */
-.textLayer {
+/* Text Layer for selection */
+.text-layer {
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
     bottom: 0;
     overflow: hidden;
-    opacity: 0.2; /* Make text slightly visible for debugging, usually 0.2 or 0 */
+    opacity: 0;
     line-height: 1.0;
+    pointer-events: none;
 }
 
-.textLayer > span {
+.text-layer.selectable {
+    opacity: 0.2;
+    pointer-events: auto;
+}
+
+.text-layer > span {
     color: transparent;
     position: absolute;
     white-space: pre;
@@ -54,10 +188,18 @@ body {
     transform-origin: 0% 0%;
 }
 
-/* Highlight style */
-.highlight {
-    background-color: rgba(255, 255, 0, 0.5);
+.text-layer.selectable > span {
+    color: transparent;
+    background: transparent;
+}
+
+.text-layer.selectable > span::selection {
+    background: rgba(231, 76, 60, 0.4);
+}
+
+/* Flow Mate highlight */
+.flowmate-pdf-highlight {
     position: absolute;
-    z-index: 10;
     pointer-events: none;
+    z-index: 50;
 }

@@ -10,7 +10,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
   chrome.contextMenus.create({
     id: "focus-read-from-here",
-    title: "Start Focus Read from here",
+    title: "Flow from here",
     contexts: ["selection", "page", "frame"],
     documentUrlPatterns: ["<all_urls>"]
   });
@@ -18,21 +18,22 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "focus-read-from-here") {
-    // Open the side panel first just in case
-    chrome.sidePanel.open({ tabId: tab.id }, () => {
-        // Send a message to the side panel (needs a small delay or retry if panel wasn't open)
-        // Actually, we can't send directly to side panel easily from here unless we use runtime.connect or broadbast.
-        // Better pattern: Send message to the tab/content script to "get relevant text"
-        // and then the content script sends it to the Side Panel, OR generic storage.
-        
-        // For now, let's just trigger the side panel to "pull" the selection.
+    // First, ask the content script for the clicked word index
+    chrome.tabs.sendMessage(tab.id, { action: "getClickedWordIndex" }, (response) => {
+      const clickedIndex = response?.wordIndex ?? -1;
+      
+      // Open the side panel
+      chrome.sidePanel.open({ tabId: tab.id }, () => {
+        // Small delay for panel to initialize, then send message
         setTimeout(() => {
-             chrome.runtime.sendMessage({
-                action: "contextMenuTriggered",
-                selectionText: info.selectionText,
-                tabId: tab.id
-             });
-        }, 500); 
+          chrome.runtime.sendMessage({
+            action: "contextMenuTriggered",
+            selectionText: info.selectionText || '',
+            clickedWordIndex: clickedIndex,
+            tabId: tab.id
+          });
+        }, 600); 
+      });
     });
   }
 });

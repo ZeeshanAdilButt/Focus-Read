@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Focus Read - Speed Reader & PDF Highlighter",
+  "name": "Flow Mate",
   "version": "1.0",
-  "description": "A speed reader extension with split view and content highlighting for Web and PDF.",
+  "description": "Your personal speed reading companion. Seamlessly flow through web content and PDFs with focus-enhancing RSVP technology.",
   "permissions": [
     "sidePanel",
     "activeTab",
@@ -23,12 +23,18 @@
     }
   ],
   "action": {
-    "default_title": "Open Focus Read",
+    "default_title": "Flow Mate",
     "default_icon": {
         "128": "assets/icon.svg"
     }
   },
   "icons": {
       "128": "assets/icon.svg"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["viewer.html", "viewer.js", "viewer.css", "pdf.worker.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

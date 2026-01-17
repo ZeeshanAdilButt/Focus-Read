@@ -1,20 +1,45 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Focus Read</title>
+    <title>Flow Mate</title>
     <link rel="stylesheet" href="sidepanel.css">
-    <!-- FontAwesome for icons (using CDN for simplicity or SVG) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div class="container">
       
-      <!-- Top Progress Bar -->
-      <div class="progress-bar-container">
-          <div class="progress-info">
-             <span id="progressText">0%</span>
-             <span id="timeRemaining">--:--</span>
+      <!-- Premium Header -->
+      <div class="app-header">
+          <div class="brand">
+              <div class="brand-icon">
+                  <svg viewBox="0 0 128 128" width="24" height="24">
+                    <defs>
+                      <linearGradient id="hdrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ff6b6b"/>
+                        <stop offset="100%" style="stop-color:#ee5a24"/>
+                      </linearGradient>
+                    </defs>
+                    <rect x="8" y="8" width="112" height="112" rx="24" fill="#1a1a2e"/>
+                    <g stroke="url(#hdrGrad)" stroke-linecap="round" fill="none">
+                      <line x1="28" y1="44" x2="100" y2="44" stroke-width="8" opacity="0.4"/>
+                      <line x1="28" y1="64" x2="100" y2="64" stroke-width="10"/>
+                      <line x1="28" y1="84" x2="100" y2="84" stroke-width="8" opacity="0.4"/>
+                      <circle cx="44" cy="64" r="4" fill="#fff"/>
+                    </g>
+                  </svg>
+              </div>
+              <span class="brand-name">Flow Mate</span>
           </div>
+          <div class="header-stats">
+              <span class="stat"><span id="progressText">0%</span></span>
+              <span class="stat-divider">•</span>
+              <span class="stat" id="timeRemaining">--:--</span>
+          </div>
+      </div>
+
+      <!-- Progress Track -->
+      <div class="progress-track">
           <input type="range" id="progressBar" value="0" min="0" max="100" step="1">
       </div>
 
@@ -25,7 +50,7 @@
              <div class="guide-bottom"></div>
         </div>
         <div id="wordDisplay" class="word-display">
-            <span class="placeholder">Focus Read</span>
+            <span class="placeholder">Ready to flow</span>
         </div>
       </div>
 
@@ -42,17 +67,17 @@
 
         <div class="secondary-controls">
              <div class="action-buttons">
-                 <button id="scanPageBtn" class="action-btn" title="Reload text from current page">
+                 <button id="scanPageBtn" class="action-btn" title="Read Page">
                      <i class="fas fa-file-alt"></i>
-                     <span>Read Page</span>
                  </button>
-                 <button id="setTextBtn" class="action-btn" title="Paste text manually">
+                 <button id="openPdfBtn" class="action-btn" title="Open PDF">
+                     <i class="fas fa-file-pdf"></i>
+                 </button>
+                 <button id="setTextBtn" class="action-btn" title="Paste Text">
                      <i class="fas fa-paste"></i>
-                     <span>Paste Text</span>
                  </button>
-                 <button id="clearTextBtn" class="action-btn action-btn-danger" title="Clear current text">
+                 <button id="clearTextBtn" class="action-btn action-btn-danger" title="Clear">
                      <i class="fas fa-trash"></i>
-                     <span>Clear</span>
                  </button>
              </div>
              <div class="wpm-control">
@@ -67,7 +92,10 @@
       <!-- Settings / Input Modal Overlay -->
       <div id="settingsOverlay" class="overlay hidden">
          <div class="overlay-content settings-content">
-             <h3>Settings</h3>
+             <div class="overlay-header">
+                 <h3>Settings</h3>
+                 <button id="closeSettingsX" class="close-x-btn" title="Close (Esc)"><i class="fas fa-times"></i></button>
+             </div>
              
              <!-- Toggles Row -->
              <div class="setting-row">
@@ -87,6 +115,32 @@
              <div class="setting-item" id="chunkSizeContainer">
                 <label>Words at a time</label>
                 <input type="number" id="chunkSizeInput" value="1" min="1" max="5">
+             </div>
+
+             <div class="setting-item">
+                <label>Pause Scale</label>
+                <div class="control-pair">
+                    <input type="range" id="pauseScaleSlider" min="1" max="3" step="0.1" value="1.5">
+                    <input type="number" id="pauseScaleInput" value="1.5" min="1" max="3" step="0.1">
+                </div>
+             </div>
+
+             <!-- Navigation Settings -->
+             <div class="setting-section-title">Navigation</div>
+             
+             <div class="setting-item">
+                <label>Skip By</label>
+                <select id="navModeSelect">
+                    <option value="seconds">Seconds</option>
+                    <option value="words">Words</option>
+                    <option value="sentences">Sentences</option>
+                    <option value="paragraphs">Paragraphs</option>
+                </select>
+             </div>
+             
+             <div class="setting-item" id="navAmountContainer">
+                <label>Skip Amount</label>
+                <input type="number" id="navAmountInput" value="10" min="1" max="60">
              </div>
 
              <div class="setting-item" id="sentenceLengthContainer" style="display:none;">

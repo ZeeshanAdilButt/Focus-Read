@@ -21,7 +21,8 @@ module.exports = {
         { from: "src/sidepanel/sidepanel.css", to: "sidepanel.css" },
         { from: "src/viewer/viewer.html", to: "viewer.html" },
         { from: "src/viewer/viewer.css", to: "viewer.css" },
-        { from: "assets/icon.svg", to: "assets/icon.svg" }
+        { from: "assets/icon.svg", to: "assets/icon.svg" },
+        { from: "node_modules/pdfjs-dist/build/pdf.worker.min.js", to: "pdf.worker.min.js" }
       ],
     }),
   ],
