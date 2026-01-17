@@ -381,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (collected.length > 30) break;
                 tempIndex++;
             }
+            chunkText = collected.join(' ');
             wordCount = collected.length;
         } else {
             chunkText = words.slice(currentIndex, currentIndex + config.chunkSize).join(' ');

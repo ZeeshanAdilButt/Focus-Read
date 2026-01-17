@@ -85,30 +85,34 @@ nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1));
 
 // Track if user is typing in page input
 let isTypingPage = false;
-let pageInputTimeout = null;
 
 pageInput.addEventListener('focus', () => {
     isTypingPage = true;
-    pageInput.select(); // Select all text for easy replacement
+    // Store current value to restore on escape
+    pageInput.dataset.originalValue = pageInput.value;
+    pageInput.select();
 });
 
-pageInput.addEventListener('blur', (e) => {
+pageInput.addEventListener('blur', () => {
     isTypingPage = false;
-    clearTimeout(pageInputTimeout);
-    const page = parseInt(e.target.value);
-    if (page >= 1 && page <= totalPages) {
-        goToPage(page);
-    } else {
-        pageInput.value = currentPage;
-    }
+    // On blur without Enter, restore original value
+    pageInput.value = currentPage;
 });
 
 pageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-        e.target.blur(); // This will trigger the blur handler
+        e.preventDefault();
+        const page = parseInt(pageInput.value);
+        if (page >= 1 && page <= totalPages) {
+            isTypingPage = false;
+            goToPage(page);
+        } else {
+            pageInput.value = currentPage;
+        }
+        pageInput.blur();
     } else if (e.key === 'Escape') {
         pageInput.value = currentPage;
-        e.target.blur();
+        pageInput.blur();
     }
 });
 
@@ -649,9 +653,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     
     if (request.action === "highlight") {
-        if (request.text) {
-            highlightWordsInPdf(request.index, request.wordCount || 1);
-        }
+        highlightWordsInPdf(request.index, request.wordCount || 1);
         return false;
     }
     
