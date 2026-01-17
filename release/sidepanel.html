@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Flow Mate</title>
+    <link rel="stylesheet" href="sidepanel.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+      
+      <!-- Premium Header -->
+      <div class="app-header">
+          <div class="brand">
+              <div class="brand-icon">
+                  <svg viewBox="0 0 128 128" width="28" height="28">
+                    <defs>
+                      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#0d0d0d"/>
+                        <stop offset="100%" stop-color="#1a1a1a"/>
+                      </linearGradient>
+                      <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#ff1a1a"/>
+                        <stop offset="100%" stop-color="#cc0000"/>
+                      </linearGradient>
+                    </defs>
+                    <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bgGrad)"/>
+                    <rect x="4" y="4" width="120" height="120" rx="28" fill="none" stroke="rgba(255,0,0,0.2)" stroke-width="1"/>
+                    <g>
+                      <rect x="36" y="32" width="12" height="64" rx="6" fill="url(#accentGrad)"/>
+                      <rect x="36" y="32" width="48" height="12" rx="6" fill="url(#accentGrad)"/>
+                      <rect x="36" y="56" width="36" height="10" rx="5" fill="url(#accentGrad)" opacity="0.85"/>
+                      <rect x="68" y="72" width="28" height="6" rx="3" fill="#ff1a1a" opacity="0.3"/>
+                      <rect x="76" y="84" width="20" height="5" rx="2.5" fill="#ff1a1a" opacity="0.2"/>
+                    </g>
+                    <circle cx="80" cy="61" r="6" fill="#fff"/>
+                  </svg>
+              </div>
+          </div>
+          <div class="header-stats">
+              <span class="stat-progress" id="progressText">0%</span>
+              <span class="stat-time" id="timeRemaining">--:--</span>
+          </div>
+      </div>
+
+      <!-- Progress Track -->
+      <div class="progress-track">
+          <input type="range" id="progressBar" value="0" min="0" max="100" step="1">
+      </div>
+
+      <!-- Main Reader Display -->
+      <div class="reader-display" id="readerDisplay">
+        <div class="focus-guides">
+             <div class="guide-top"></div>
+             <div class="guide-bottom"></div>
+        </div>
+        <div id="wordDisplay" class="word-display">
+            <span class="placeholder">Ready to flow</span>
+        </div>
+      </div>
+
+      <!-- Control Bar -->
+      <div class="controls-container">
+        
+        <div class="main-controls">
+            <button id="restartBtn" class="icon-btn" title="Restart"><i class="fas fa-undo"></i></button>
+            <button id="prevBtn" class="icon-btn" title="Back 10s"><i class="fas fa-backward"></i></button>
+            <button id="playPauseBtn" class="play-btn"><i class="fas fa-play"></i></button>
+            <button id="nextBtn" class="icon-btn" title="Forward 10s"><i class="fas fa-forward"></i></button>
+            <button id="fullscreenBtn" class="icon-btn" title="Fullscreen"><i class="fas fa-expand"></i></button>
+            <button id="settingsBtn" class="icon-btn" title="Settings"><i class="fas fa-cog"></i></button>
+        </div>
+
+        <div class="secondary-controls">
+             <div class="action-buttons">
+                 <button id="scanPageBtn" class="action-btn" title="Read Page">
+                     <i class="fas fa-file-alt"></i>
+                 </button>
+                 <button id="openPdfBtn" class="action-btn" title="Open PDF">
+                     <i class="fas fa-file-pdf"></i>
+                 </button>
+                 <button id="setTextBtn" class="action-btn" title="Paste Text">
+                     <i class="fas fa-paste"></i>
+                 </button>
+                 <button id="clearTextBtn" class="action-btn action-btn-danger" title="Clear">
+                     <i class="fas fa-trash"></i>
+                 </button>
+             </div>
+             <div class="wpm-control">
+                <span>WPM:</span>
+                <span id="wpmDisplay">300</span>
+                <input type="range" id="wpmInput" value="300" min="60" max="1000" step="10">
+             </div>
+        </div>
+      
+      </div>
+
+      <!-- Settings / Input Modal Overlay -->
+      <div id="settingsOverlay" class="overlay hidden">
+         <div class="overlay-content settings-content">
+             <div class="overlay-header">
+                 <h3>Settings</h3>
+                 <button id="closeSettingsX" class="close-x-btn" title="Close (Esc)"><i class="fas fa-times"></i></button>
+             </div>
+             
+             <!-- Toggles Row -->
+             <div class="setting-row">
+                 <button id="togglePausesBtn" class="toggle-btn active" data-active="true">Pauses: On</button>
+                 <button id="toggleLoopBtn" class="toggle-btn" data-active="false">Loop: Off</button>
+             </div>
+
+             <!-- Sliders & Inputs -->
+             <div class="setting-item">
+                <label>Mode</label>
+                <div class="setting-row">
+                    <button id="modeWordBtn" class="toggle-btn active" data-mode="word">Word</button>
+                    <button id="modeSentenceBtn" class="toggle-btn" data-mode="sentence">Sentence</button>
+                </div>
+             </div>
+
+             <div class="setting-item" id="chunkSizeContainer">
+                <label>Words at a time</label>
+                <input type="number" id="chunkSizeInput" value="1" min="1" max="5">
+             </div>
+
+             <div class="setting-item">
+                <label>Pause Scale</label>
+                <div class="control-pair">
+                    <input type="range" id="pauseScaleSlider" min="1" max="3" step="0.1" value="1.5">
+                    <input type="number" id="pauseScaleInput" value="1.5" min="1" max="3" step="0.1">
+                </div>
+             </div>
+
+             <!-- Navigation Settings -->
+             <div class="setting-section-title">Navigation</div>
+             
+             <div class="setting-item">
+                <label>Skip By</label>
+                <select id="navModeSelect">
+                    <option value="seconds">Seconds</option>
+                    <option value="words">Words</option>
+                    <option value="sentences">Sentences</option>
+                    <option value="paragraphs">Paragraphs</option>
+                </select>
+             </div>
+             
+             <div class="setting-item" id="navAmountContainer">
+                <label>Skip Amount</label>
+                <input type="number" id="navAmountInput" value="10" min="1" max="60">
+             </div>
+
+             <div class="setting-item" id="sentenceLengthContainer" style="display:none;">
+                <label>Sentence Preview</label>
+                <span style="font-size: 0.8rem; color: #888;">Shows full sentence</span>
+             </div>
+
+             <div class="setting-item">
+                <label>Font</label>
+                <select id="fontSelect">
+                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                    <option value="'Courier New', monospace">Courier</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Verdana', sans-serif">Verdana</option>
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                </select>
+             </div>
+
+             <div class="setting-item">
+                <label>Font Scale</label>
+                <div class="control-pair">
+                    <input type="range" id="fontScaleSlider" min="0.5" max="3" step="0.1" value="1">
+                    <input type="number" id="fontScaleInput" value="1" min="0.5" max="3" step="0.1">
+                </div>
+             </div>
+
+             <!-- Colors -->
+             <div class="setting-item color-item">
+                <label>Screen</label>
+                <div class="color-pair">
+                    <input type="color" id="bgColorPicker" value="#000000">
+                    <input type="text" id="bgColorText" value="#000000">
+                </div>
+             </div>
+             
+             <div class="setting-item color-item">
+                <label>Text</label>
+                <div class="color-pair">
+                    <input type="color" id="textColorPicker" value="#ffffff">
+                    <input type="text" id="textColorText" value="#ffffff">
+                </div>
+             </div>
+
+             <div class="setting-item color-item">
+                <label>Focus</label>
+                <div class="color-pair">
+                    <input type="color" id="focusColorPicker" value="#e74c3c">
+                    <input type="text" id="focusColorText" value="#e74c3c">
+                </div>
+             </div>
+
+             <div class="settings-actions">
+                 <button id="resetSettingsBtn" class="secondary-btn">Reset</button>
+                 <button id="closeSettingsBtn" class="primary-btn">Close</button>
+             </div>
+         </div>
+      </div>
+
+      <div id="manualInputOverlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h3>Paste Text</h3>
+            <textarea id="manualTextInput" placeholder="Paste your text here..."></textarea>
+            <div class="overlay-actions">
+                <button id="cancelInputBtn" class="secondary-btn">Cancel</button>
+                <button id="loadInputBtn" class="primary-btn">Read</button>
+            </div>
+        </div>
+     </div>
+
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Ready</span>
+    </div>
+
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

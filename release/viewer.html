@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flow Mate - PDF Reader</title>
+    <link rel="stylesheet" href="viewer.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Toolbar -->
+    <header id="toolbar">
+        <div class="toolbar-left">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#e74c3c" stroke-width="2">
+                        <path d="M4 6h16M4 12h16M4 18h10"/>
+                        <circle cx="8" cy="12" r="1.5" fill="#e74c3c"/>
+                    </svg>
+                </div>
+                <span class="brand-name">Flow Mate</span>
+            </div>
+            
+            <label for="fileInput" class="file-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span>Open PDF</span>
+                <input type="file" id="fileInput" accept="application/pdf">
+            </label>
+        </div>
+        
+        <div class="toolbar-center">
+            <div class="page-controls">
+                <button id="prevPage" class="icon-btn" title="Previous Page" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                
+                <div class="page-indicator">
+                    <input type="text" id="pageInput" value="1" title="Go to page" pattern="[0-9]*" inputmode="numeric">
+                    <span class="page-divider">/</span>
+                    <span id="pageCount">0</span>
+                </div>
+                
+                <button id="nextPage" class="icon-btn" title="Next Page" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="zoom-controls">
+                <button id="zoomOut" class="icon-btn" title="Zoom Out">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </button>
+                <span id="zoomLevel">100%</span>
+                <button id="zoomIn" class="icon-btn" title="Zoom In">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="toolbar-right">
+            <button id="toggleSelect" class="tool-btn" title="Select text for copying">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                </svg>
+                <span>Select</span>
+            </button>
+            
+            <button id="readPageBtn" class="read-btn" title="Start reading from current page">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <span>Read Page</span>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Loading PDF...</span>
+    </div>
+    
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="welcome-screen">
+        <div class="welcome-content">
+            <div class="welcome-icon">
+                <svg viewBox="0 0 80 80" width="80" height="80">
+                    <defs>
+                        <linearGradient id="pdfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#e74c3c"/>
+                            <stop offset="100%" style="stop-color:#c0392b"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="15" y="5" width="50" height="70" rx="4" fill="#1f2937" stroke="url(#pdfGrad)" stroke-width="2"/>
+                    <path d="M25 25h30M25 35h30M25 45h20" stroke="#4b5563" stroke-width="2" stroke-linecap="round"/>
+                    <text x="40" y="63" text-anchor="middle" fill="url(#pdfGrad)" font-size="12" font-weight="bold">PDF</text>
+                </svg>
+            </div>
+            <h2>Welcome to Flow Mate PDF Reader</h2>
+            <p>Open a PDF file to start speed reading with RSVP technology</p>
+            <label for="fileInput" class="welcome-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Choose PDF File
+            </label>
+            <div class="welcome-hint">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                </svg>
+                <span>Tip: Right-click any word and select "Flow from here" to start reading from that position</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PDF Container -->
+    <main id="pdfContainer" class="pdf-container hidden"></main>
+    
+    <!-- Status Toast -->
+    <div id="statusToast" class="status-toast hidden">
+        <span id="statusMessage"></span>
+    </div>
+    
+    <script src="viewer.js"></script>
+</body>
+</html>

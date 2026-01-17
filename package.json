@@ -4,6 +4,7 @@
   "description": "Speed reader extension for Chrome",
   "scripts": {
     "build": "webpack --mode production",
+    "build:release": "webpack --mode production && node scripts/prepare-release.js",
     "dev": "webpack --mode development --watch"
   },
   "dependencies": {

@@ -30,6 +30,7 @@ let textSelectionMode = true;
 let lastClickedWordIndex = -1;
 let paragraphStarts = [0];
 let currentScale = 1.5;
+let isNavigating = false; // Flag to prevent scroll handler interference
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3.0;
 const SCALE_STEP = 0.25;
@@ -119,6 +120,7 @@ pageInput.addEventListener('keydown', (e) => {
 function goToPage(num) {
     if (num < 1 || num > totalPages || !pdfLoaded) return;
     
+    isNavigating = true;
     currentPage = num;
     pageInput.value = num;
     updateNavButtons();
@@ -132,10 +134,19 @@ function goToPage(num) {
                 if (rendered) {
                     rendered.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
+                // Allow scroll handler to work again after navigation completes
+                setTimeout(() => {
+                    isNavigating = false;
+                }, 100);
             });
         } else {
             pageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => {
+                isNavigating = false;
+            }, 100);
         }
+    } else {
+        isNavigating = false;
     }
 }
 
@@ -252,7 +263,7 @@ readPageBtn.addEventListener('click', () => {
 
 // ========== SCROLL TRACKING ==========
 pdfContainer.addEventListener('scroll', () => {
-    if (!pdfLoaded) return;
+    if (!pdfLoaded || isNavigating) return;
     
     const containerRect = pdfContainer.getBoundingClientRect();
     const containerCenter = containerRect.top + containerRect.height / 2;
@@ -262,7 +273,8 @@ pdfContainer.addEventListener('scroll', () => {
     
     for (let i = 1; i <= totalPages; i++) {
         const pageDiv = document.getElementById(`page-${i}`);
-        if (pageDiv) {
+        // Skip placeholder pages that haven't been rendered yet
+        if (pageDiv && !pageDiv.classList.contains('placeholder')) {
             const pageRect = pageDiv.getBoundingClientRect();
             const pageCenter = pageRect.top + pageRect.height / 2;
             const distance = Math.abs(pageCenter - containerCenter);

@@ -12,39 +12,63 @@ Your personal speed reading companion. Read web pages and PDFs faster using RSVP
 - **Smart Controls** - Pause scaling, loop mode, and flexible navigation options
 - **No Sign-ups Required** - Just install and start reading
 
-## Getting Started Locally
+## Getting Started
 
-### 1. Clone the Repository
+### Option 1: Download Pre-built Extension (Easiest)
+
+The easiest way to get started is to download the pre-built extension:
+
+1. **Download the Repository**
+   - Go to the [GitHub repository](https://github.com/yourusername/flow-mate)
+   - Click the green "Code" button and select "Download ZIP"
+   - Or clone: `git clone https://github.com/yourusername/flow-mate.git`
+
+2. **Extract and Load**
+   - Extract the ZIP file (if downloaded)
+   - Open Chrome and go to `chrome://extensions/`
+   - Enable "Developer mode" (toggle in the top right)
+   - Click "Load unpacked"
+   - Select the `release` folder from the extracted/cloned repository
+
+3. **Start Using**
+   - The extension is now installed and ready to use
+   - Click the Flow Mate icon in your Chrome toolbar
+
+### Option 2: Build from Source
+
+If you want to build the extension yourself:
+
+1. **Clone the Repository**
 ```bash
 git clone https://github.com/yourusername/flow-mate.git
 cd flow-mate
 ```
 
-### 2. Install Dependencies
+2. **Install Dependencies**
 ```bash
 npm install
 ```
 
-### 3. Build the Extension
+3. **Build the Extension**
 ```bash
 npm run build
 ```
 
 This creates a `dist` folder with the compiled extension.
 
-### 4. Load into Chrome
+4. **Load into Chrome**
 - Open `chrome://extensions/` in your browser
 - Enable "Developer mode" (toggle in the top right corner)
 - Click "Load unpacked"
 - Select the `dist` folder from your project directory
 - The extension is now installed and ready to use
 
-### 5. Start Using Flow Mate
+## How to Use Flow Mate
+## How to Use Flow Mate
 - Click the Flow Mate icon in your Chrome toolbar
-- Navigate to any webpage
-- Right-click and select "Flow from here" to start reading from that position
-- Or use the "Scan Page" button to load the entire page
-- Adjust WPM settings and customize colors in the settings panel
+- Navigate to any article, then either:
+  - Click "Scan Page" to load all text from the page
+  - Right-click on any text and select "Flow from here" to start reading from that exact position
 
 ## Usage
 

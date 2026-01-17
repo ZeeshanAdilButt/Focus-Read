@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Flow Mate - Focus Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="fullscreen.css">
+</head>
+<body>
+    <!-- Main Reader Display -->
+    <div id="readerDisplay" class="reader-display">
+        <div id="wordDisplay" class="word-display">
+            <span class="placeholder">Loading...</span>
+        </div>
+    </div>
+    
+    <!-- Floating Controls -->
+    <div id="controls" class="controls">
+        <button id="prevBtn" class="ctrl-btn" title="Back (←)">
+            <i class="fas fa-backward"></i>
+        </button>
+        <button id="playPauseBtn" class="play-btn" title="Play/Pause (Space)">
+            <i class="fas fa-play"></i>
+        </button>
+        <button id="nextBtn" class="ctrl-btn" title="Forward (→)">
+            <i class="fas fa-forward"></i>
+        </button>
+        <div class="ctrl-divider"></div>
+        <button id="exitBtn" class="ctrl-btn exit-btn" title="Exit Fullscreen (Esc)">
+            <i class="fas fa-compress"></i>
+        </button>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div id="progressContainer" class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+    </div>
+    
+    <!-- Info Display -->
+    <div id="infoDisplay" class="info-display">
+        <span id="progressText">0%</span>
+        <span class="info-divider">|</span>
+        <span id="wpmDisplay">300 WPM</span>
+        <span class="info-divider">|</span>
+        <span id="timeRemaining">--:--</span>
+    </div>
+    
+    <script src="fullscreen.js"></script>
+</body>
+</html>
