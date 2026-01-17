@@ -16,6 +16,8 @@ let pdfLoaded = false;
 let currentPage = 1;
 let totalPages = 0;
 let textSelectionMode = false;
+let lastClickedWordIndex = -1; // Track right-click position
+let paragraphStarts = [0]; // Track paragraph boundaries
 
 // Show status message in container
 function showStatus(message, isError = false) {
@@ -129,9 +131,68 @@ pdfContainer.addEventListener('scroll', () => {
     }
 });
 
+// Track right-click position to find word under cursor
+pdfContainer.addEventListener('contextmenu', (e) => {
+    if (!pdfLoaded || allWords.length === 0) return;
+    
+    // Find which page was clicked
+    const pageDiv = e.target.closest('.pdf-page');
+    if (!pageDiv) return;
+    
+    const pageNum = parseInt(pageDiv.dataset.pageNumber);
+    const pageRect = pageDiv.getBoundingClientRect();
+    
+    // Get click position relative to page
+    const clickX = e.clientX - pageRect.left;
+    const clickY = e.clientY - pageRect.top;
+    
+    // Find closest word on this page
+    let closestIndex = -1;
+    let closestDist = Infinity;
+    
+    allWords.forEach((word, idx) => {
+        if (word.page !== pageNum) return;
+        
+        // Check if click is within word bounds (with some padding)
+        const padding = 10;
+        const inX = clickX >= word.x - padding && clickX <= word.x + word.width + padding;
+        const inY = clickY >= word.y - padding && clickY <= word.y + word.height + padding;
+        
+        if (inX && inY) {
+            const dist = Math.abs(clickX - (word.x + word.width / 2)) + Math.abs(clickY - (word.y + word.height / 2));
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestIndex = idx;
+            }
+        }
+    });
+    
+    // If no exact match, find closest word on this page
+    if (closestIndex === -1) {
+        allWords.forEach((word, idx) => {
+            if (word.page !== pageNum) return;
+            
+            const dist = Math.sqrt(
+                Math.pow(clickX - (word.x + word.width / 2), 2) + 
+                Math.pow(clickY - (word.y + word.height / 2), 2)
+            );
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestIndex = idx;
+            }
+        });
+    }
+    
+    if (closestIndex !== -1) {
+        lastClickedWordIndex = closestIndex;
+        console.log("Flow Mate PDF: Right-clicked at word index", closestIndex, "word:", allWords[closestIndex].word);
+    }
+});
+
 async function loadPdf(data) {
     pdfContainer.innerHTML = ''; // Clear previous
     allWords = []; 
+    paragraphStarts = [0]; // Reset paragraph tracking
     
     pdfDoc = await pdfjsLib.getDocument({ data }).promise;
     totalPages = pdfDoc.numPages;
@@ -145,7 +206,52 @@ async function loadPdf(data) {
         await renderPage(i);
     }
     
-    console.log("Flow Mate: PDF rendered with " + allWords.length + " words.");
+    // Detect paragraph boundaries based on Y-position jumps
+    detectParagraphs();
+    
+    console.log("Flow Mate: PDF rendered with " + allWords.length + " words and " + paragraphStarts.length + " paragraphs.");
+}
+
+// Detect paragraphs based on significant Y-position changes
+function detectParagraphs() {
+    paragraphStarts = [0];
+    
+    if (allWords.length < 2) return;
+    
+    let lastPage = allWords[0].page;
+    let lastY = allWords[0].y;
+    let lastLineHeight = allWords[0].height;
+    
+    for (let i = 1; i < allWords.length; i++) {
+        const word = allWords[i];
+        
+        // New page is always a new paragraph
+        if (word.page !== lastPage) {
+            if (!paragraphStarts.includes(i)) {
+                paragraphStarts.push(i);
+            }
+            lastPage = word.page;
+            lastY = word.y;
+            lastLineHeight = word.height;
+            continue;
+        }
+        
+        // Significant Y jump (more than 1.5x line height) indicates new paragraph
+        const yDiff = word.y - lastY;
+        const threshold = lastLineHeight * 1.5;
+        
+        if (yDiff > threshold) {
+            if (!paragraphStarts.includes(i)) {
+                paragraphStarts.push(i);
+            }
+        }
+        
+        lastY = word.y;
+        lastLineHeight = word.height;
+    }
+    
+    // Sort paragraph starts
+    paragraphStarts.sort((a, b) => a - b);
 }
 
 async function renderPage(num) {
@@ -247,9 +353,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ content: null, error: "No PDF loaded" });
         } else {
             const fullText = allWords.map(w => w.word).join(' ');
-            console.log("Flow Mate Viewer: Sending content, length:", fullText.length);
-            sendResponse({ content: fullText });
+            console.log("Flow Mate Viewer: Sending content with", paragraphStarts.length, "paragraphs");
+            sendResponse({ 
+                content: fullText,
+                paragraphStarts: paragraphStarts
+            });
         }
+        return true;
+    } else if (request.action === "getClickedWordIndex") {
+        // Return the word index where user last right-clicked
+        console.log("Flow Mate Viewer: Returning clicked word index", lastClickedWordIndex);
+        sendResponse({ wordIndex: lastClickedWordIndex });
+        return true;
+    } else if (request.action === "resetHighlightPosition") {
+        // Reset tracking for new reading session
+        lastClickedWordIndex = -1;
+        sendResponse({ success: true });
         return true;
     } else if (request.action === "highlight") {
         const wordCount = request.wordCount || 1;

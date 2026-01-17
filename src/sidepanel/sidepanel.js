@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualTextInput = document.getElementById('manualTextInput');
     const loadInputBtn = document.getElementById('loadInputBtn');
     const cancelInputBtn = document.getElementById('cancelInputBtn');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const readerDisplay = document.getElementById('readerDisplay');
 
     // Settings UI Elements
     const togglePausesBtn = document.getElementById('togglePausesBtn');
@@ -46,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIndex = 0;
     let isPlaying = false;
     let timer = null; // Used for "next step" timeout
+    let isFullscreen = false;
+    let fullscreenOverlay = null;
+    let fullscreenProgress = null;
     
     // Config
     let config = {
@@ -63,6 +70,21 @@ document.addEventListener('DOMContentLoaded', () => {
         navMode: 'seconds', // 'seconds', 'words', 'sentences', 'paragraphs'
         navAmount: 10
     };
+
+    // Toast notification helper
+    function showToast(message, duration = 2500) {
+        if (!toast || !toastMessage) return;
+        toastMessage.textContent = message;
+        toast.classList.remove('hidden');
+        // Force reflow before adding show class
+        toast.offsetHeight;
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, duration);
+    }
 
     // UI Elements for Mode
     const modeWordBtn = document.getElementById('modeWordBtn');
@@ -219,6 +241,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const mins = Math.floor(minutesLeft);
         const secs = Math.ceil((minutesLeft - mins) * 60);
         timeRemaining.innerText = (mins > 0 ? `${mins}m ` : "") + `${secs}s`;
+        
+        // Update fullscreen progress if active
+        if (isFullscreen && fullscreenProgress) {
+            const bar = document.getElementById('fsProgressBar');
+            if (bar) {
+                bar.style.width = percent + '%';
+            }
+        }
     }
 
     let lastStepDelta = 1;
@@ -285,6 +315,10 @@ document.addEventListener('DOMContentLoaded', () => {
         isPlaying = true;
         playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
         
+        // Update fullscreen button if active
+        const fsPlayBtn = document.getElementById('fsPlayPause');
+        if (fsPlayBtn) fsPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        
         // Display CURRENT index immediately
         const { chunk, nextIndexChange } = updateDisplay();
         lastStepDelta = nextIndexChange;
@@ -298,6 +332,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function pause() {
         isPlaying = false;
         playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        
+        // Update fullscreen button if active
+        const fsPlayBtn = document.getElementById('fsPlayPause');
+        if (fsPlayBtn) fsPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+        
         if (timer) {
             clearTimeout(timer);
             timer = null;
@@ -805,11 +844,108 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsOverlay.classList.add('hidden');
     });
     
-    // ESC key to close overlays
+    // Fullscreen functionality
+    function enterFullscreen() {
+        isFullscreen = true;
+        
+        // Add fullscreen class to reader display
+        readerDisplay.classList.add('fullscreen-mode');
+        
+        // Create floating controls overlay
+        fullscreenOverlay = document.createElement('div');
+        fullscreenOverlay.className = 'fullscreen-overlay';
+        fullscreenOverlay.innerHTML = `
+            <button class="fs-btn" id="fsPlayPause" title="Play/Pause"><i class="fas fa-${isPlaying ? 'pause' : 'play'}"></i></button>
+            <button class="fs-btn" id="fsPrev" title="Back"><i class="fas fa-backward"></i></button>
+            <button class="fs-btn" id="fsNext" title="Forward"><i class="fas fa-forward"></i></button>
+            <button class="fs-btn" id="fsExit" title="Exit Fullscreen"><i class="fas fa-compress"></i></button>
+        `;
+        document.body.appendChild(fullscreenOverlay);
+        
+        // Create progress bar
+        fullscreenProgress = document.createElement('div');
+        fullscreenProgress.className = 'fullscreen-progress';
+        fullscreenProgress.innerHTML = '<div class="fullscreen-progress-bar" id="fsProgressBar"></div>';
+        document.body.appendChild(fullscreenProgress);
+        updateFullscreenProgress();
+        
+        // Bind controls
+        document.getElementById('fsPlayPause').addEventListener('click', () => {
+            if (isPlaying) pause(); else play();
+            document.getElementById('fsPlayPause').innerHTML = `<i class="fas fa-${isPlaying ? 'pause' : 'play'}"></i>`;
+        });
+        document.getElementById('fsPrev').addEventListener('click', () => {
+            stepNavigation(-1);
+            updateFullscreenProgress();
+        });
+        document.getElementById('fsNext').addEventListener('click', () => {
+            stepNavigation(1);
+            updateFullscreenProgress();
+        });
+        document.getElementById('fsExit').addEventListener('click', exitFullscreen);
+        
+        // Update fullscreen button icon
+        fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+        fullscreenBtn.title = 'Exit Fullscreen';
+        
+        // Hide controls after 3s of inactivity
+        let hideTimeout;
+        const showControls = () => {
+            fullscreenOverlay.style.opacity = '1';
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                if (isFullscreen && isPlaying) {
+                    fullscreenOverlay.style.opacity = '0';
+                }
+            }, 3000);
+        };
+        document.addEventListener('mousemove', showControls);
+        showControls();
+    }
+
+    function exitFullscreen() {
+        isFullscreen = false;
+        readerDisplay.classList.remove('fullscreen-mode');
+        
+        if (fullscreenOverlay) {
+            fullscreenOverlay.remove();
+            fullscreenOverlay = null;
+        }
+        if (fullscreenProgress) {
+            fullscreenProgress.remove();
+            fullscreenProgress = null;
+        }
+        
+        fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+        fullscreenBtn.title = 'Fullscreen';
+    }
+
+    function updateFullscreenProgress() {
+        if (!isFullscreen || !fullscreenProgress) return;
+        const bar = document.getElementById('fsProgressBar');
+        if (bar && words.length > 0) {
+            const pct = (currentIndex / words.length) * 100;
+            bar.style.width = pct + '%';
+        }
+    }
+
+    fullscreenBtn.addEventListener('click', () => {
+        if (isFullscreen) {
+            exitFullscreen();
+        } else {
+            enterFullscreen();
+        }
+    });
+    
+    // ESC key to close overlays and exit fullscreen
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            settingsOverlay.classList.add('hidden');
-            manualInputOverlay.classList.add('hidden');
+            if (isFullscreen) {
+                exitFullscreen();
+            } else {
+                settingsOverlay.classList.add('hidden');
+                manualInputOverlay.classList.add('hidden');
+            }
         }
     });
 
@@ -912,6 +1048,10 @@ document.addEventListener('DOMContentLoaded', () => {
                      lastStepDelta = 1;
                      updateDisplay();
                      updateProgress();
+                     
+                     // Show toast notification
+                     const wordPreview = fullWords.slice(startIndex, startIndex + 3).join(' ');
+                     showToast(`Starting from: "${wordPreview}..."`);
                      
                      // Small delay before highlighting
                      setTimeout(() => {
