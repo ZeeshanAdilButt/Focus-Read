@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Focus Read - Speed Reader & PDF Highlighter",
+  "version": "1.0",
+  "description": "A speed reader extension with split view and content highlighting for Web and PDF.",
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "contextMenus"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_title": "Open Focus Read",
+    "default_icon": {
+        "128": "assets/icon.svg"
+    }
+  },
+  "icons": {
+      "128": "assets/icon.svg"
+  }
+}

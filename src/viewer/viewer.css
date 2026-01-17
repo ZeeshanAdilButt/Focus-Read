@@ -1,0 +1,63 @@
+body {
+    margin: 0;
+    background-color: #525659;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#toolbar {
+    height: 40px;
+    background-color: #333;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    z-index: 100;
+}
+
+#pdfContainer {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.pdf-page {
+    position: relative;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    background-color: white;
+}
+
+/* Important for text selection and highlighting */
+.textLayer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.2; /* Make text slightly visible for debugging, usually 0.2 or 0 */
+    line-height: 1.0;
+}
+
+.textLayer > span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+
+/* Highlight style */
+.highlight {
+    background-color: rgba(255, 255, 0, 0.5);
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+}

@@ -1,0 +1,347 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100vh;
+  }
+  
+  /* Progress Bar */
+  .progress-bar-container {
+      padding: 10px 16px;
+      background: #111;
+  }
+  
+  .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 5px;
+  }
+  
+  #progressBar {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+  }
+  
+  #progressBar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #e74c3c; /* Red accent */
+    cursor: pointer;
+  }
+  
+  /* Reader Display */
+  .reader-display {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 20px;
+  }
+  
+  .word-display {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  
+  .word-display .highlight-char {
+      color: #e74c3c; /* Red Optimal Recognition Point */
+  }
+  
+  .placeholder {
+      color: #444;
+      font-size: 2rem;
+  }
+  
+  /* Controls Container */
+  .controls-container {
+      background: #111;
+      border-top: 1px solid #222;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border-radius: 16px 16px 0 0;
+  }
+  
+  .main-controls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      align-items: center;
+  }
+  
+  .icon-btn {
+      background: transparent;
+      border: 1px solid #333;
+      color: #ccc;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+  }
+  
+  .icon-btn:hover {
+      background: #222;
+      color: #fff;
+      border-color: #555;
+  }
+  
+  .play-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fff;
+      color: #000;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s;
+  }
+  
+  .play-btn:active {
+      transform: scale(0.95);
+  }
+  
+  .secondary-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+  }
+  
+  .text-btn {
+      background: #222;
+      border: 1px solid #333;
+      color: #ccc;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+  }
+  
+  .text-btn:hover {
+      background: #333;
+      color: #fff;
+  }
+  
+  .wpm-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: #ccc;
+  }
+  
+  #wpmInput {
+      width: 100px;
+      height: 4px;
+      accent-color: #e74c3c;
+  }
+  
+  /* Overlays */
+  .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+  }
+  
+  .overlay.hidden {
+      display: none;
+  }
+  
+  .overlay-content {
+      background: #000;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border: 1px solid #333;
+      max-height: 90vh;
+      overflow-y: auto;
+  }
+  
+  .overlay-content h3 {
+      margin-top: 0;
+      color: #fff;
+      font-size: 1.1rem;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+  }
+
+  /* Settings Controls */
+  .setting-row {
+      display: flex;
+      gap: 12px;
+  }
+
+  .toggle-btn {
+      background: #111;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      flex: 1;
+      transition: all 0.2s;
+  }
+
+  .toggle-btn.active {
+      background: #222;
+      border-color: #fff;
+  }
+
+  .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+  }
+
+  .setting-item label {
+      color: #ccc;
+      font-size: 0.9rem;
+      font-weight: 600;
+  }
+
+  .control-pair {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+  }
+
+  .control-pair input[type="range"] {
+      width: 100px;
+      accent-color: #e74c3c;
+  }
+
+  .control-pair input[type="number"], .setting-item input[type="number"] {
+      width: 50px;
+      background: #222;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 4px;
+      border-radius: 4px;
+  }
+
+  select {
+      background: #222;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 6px;
+      border-radius: 4px;
+      width: 140px;
+  }
+
+  /* Colors */
+  .setting-item.color-item {
+      justify-content: space-between;
+  }
+
+  .color-pair {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+  }
+
+  input[type="color"] {
+      background: none;
+      border: none;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      padding: 0;
+  }
+
+  input[type="text"] {
+      background: #222;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 6px;
+      border-radius: 4px;
+      width: 70px;
+      font-family: monospace;
+  }
+
+  .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+      border-top: 1px solid #333;
+      padding-top: 16px;
+  }
+  
+  textarea {
+      background: #111;
+      border: 1px solid #333;
+      color: #fff;
+      width: 100%;
+      height: 100px;
+      padding: 8px;
+      resize: none;
+      border-radius: 4px;
+  }
+  
+  .overlay-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+  }
+  
+  .primary-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+  }
+  
+  .secondary-btn {
+      background: #444;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+  }

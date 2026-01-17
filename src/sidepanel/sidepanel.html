@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Focus Read</title>
+    <link rel="stylesheet" href="sidepanel.css">
+    <!-- FontAwesome for icons (using CDN for simplicity or SVG) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+  <body>
+    <div class="container">
+      
+      <!-- Top Progress Bar -->
+      <div class="progress-bar-container">
+          <div class="progress-info">
+             <span id="progressText">0%</span>
+             <span id="timeRemaining">--:--</span>
+          </div>
+          <input type="range" id="progressBar" value="0" min="0" max="100" step="1">
+      </div>
+
+      <!-- Main Reader Display -->
+      <div class="reader-display" id="readerDisplay">
+        <div class="focus-guides">
+             <div class="guide-top"></div>
+             <div class="guide-bottom"></div>
+        </div>
+        <div id="wordDisplay" class="word-display">
+            <span class="placeholder">Focus Read</span>
+        </div>
+      </div>
+
+      <!-- Control Bar -->
+      <div class="controls-container">
+        
+        <div class="main-controls">
+            <button id="restartBtn" class="icon-btn" title="Restart"><i class="fas fa-undo"></i></button>
+            <button id="prevBtn" class="icon-btn" title="Back 10s"><i class="fas fa-backward"></i></button>
+            <button id="playPauseBtn" class="play-btn"><i class="fas fa-play"></i></button>
+            <button id="nextBtn" class="icon-btn" title="Forward 10s"><i class="fas fa-forward"></i></button>
+            <button id="settingsBtn" class="icon-btn" title="Settings"><i class="fas fa-cog"></i></button>
+        </div>
+
+        <div class="secondary-controls">
+             <button id="scanPageBtn" class="text-btn" title="Reload text from current page">Read Page</button>
+             <button id="setTextBtn" class="text-btn" title="Paste text manually">Paste Text</button>
+             <div class="wpm-control">
+                <span>WPM:</span>
+                <span id="wpmDisplay">300</span>
+                <input type="range" id="wpmInput" value="300" min="60" max="1000" step="10">
+             </div>
+        </div>
+      
+      </div>
+
+      <!-- Settings / Input Modal Overlay -->
+      <div id="settingsOverlay" class="overlay hidden">
+         <div class="overlay-content settings-content">
+             <h3>Settings</h3>
+             
+             <!-- Toggles Row -->
+             <div class="setting-row">
+                 <button id="togglePausesBtn" class="toggle-btn active" data-active="true">Pauses: On</button>
+                 <button id="toggleLoopBtn" class="toggle-btn" data-active="false">Loop: Off</button>
+             </div>
+
+             <!-- Sliders & Inputs -->
+             <div class="setting-item">
+                <label>Mode</label>
+                <div class="setting-row">
+                    <button id="modeWordBtn" class="toggle-btn active" data-mode="word">Word</button>
+                    <button id="modeSentenceBtn" class="toggle-btn" data-mode="sentence">Sentence</button>
+                </div>
+             </div>
+
+             <div class="setting-item" id="chunkSizeContainer">
+                <label>Words at a time</label>
+                <input type="number" id="chunkSizeInput" value="1" min="1" max="5">
+             </div>
+
+             <div class="setting-item" id="sentenceLengthContainer" style="display:none;">
+                <label>Sentence Preview</label>
+                <span style="font-size: 0.8rem; color: #888;">Shows full sentence</span>
+             </div>
+
+             <div class="setting-item">
+                <label>Font</label>
+                <select id="fontSelect">
+                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                    <option value="'Courier New', monospace">Courier</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Verdana', sans-serif">Verdana</option>
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                </select>
+             </div>
+
+             <div class="setting-item">
+                <label>Font Scale</label>
+                <div class="control-pair">
+                    <input type="range" id="fontScaleSlider" min="0.5" max="3" step="0.1" value="1">
+                    <input type="number" id="fontScaleInput" value="1" min="0.5" max="3" step="0.1">
+                </div>
+             </div>
+
+             <!-- Colors -->
+             <div class="setting-item color-item">
+                <label>Screen</label>
+                <div class="color-pair">
+                    <input type="color" id="bgColorPicker" value="#000000">
+                    <input type="text" id="bgColorText" value="#000000">
+                </div>
+             </div>
+             
+             <div class="setting-item color-item">
+                <label>Text</label>
+                <div class="color-pair">
+                    <input type="color" id="textColorPicker" value="#ffffff">
+                    <input type="text" id="textColorText" value="#ffffff">
+                </div>
+             </div>
+
+             <div class="setting-item color-item">
+                <label>Focus</label>
+                <div class="color-pair">
+                    <input type="color" id="focusColorPicker" value="#e74c3c">
+                    <input type="text" id="focusColorText" value="#e74c3c">
+                </div>
+             </div>
+
+             <div class="settings-actions">
+                 <button id="resetSettingsBtn" class="secondary-btn">Reset</button>
+                 <button id="closeSettingsBtn" class="primary-btn">Close</button>
+             </div>
+         </div>
+      </div>
+
+      <div id="manualInputOverlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h3>Paste Text</h3>
+            <textarea id="manualTextInput" placeholder="Paste your text here..."></textarea>
+            <div class="overlay-actions">
+                <button id="cancelInputBtn" class="secondary-btn">Cancel</button>
+                <button id="loadInputBtn" class="primary-btn">Read</button>
+            </div>
+        </div>
+     </div>
+
+    </div>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
