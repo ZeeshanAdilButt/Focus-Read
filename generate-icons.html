@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate PNG Icons</title>
+</head>
+<body>
+    <h1>Flow Mate Icon Generator</h1>
+    <p>Right-click each icon and "Save image as..." to download</p>
+    
+    <div id="icons"></div>
+    
+    <script>
+        const sizes = [16, 32, 48, 128];
+        const container = document.getElementById('icons');
+        
+        const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+          <defs>
+            <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#ff6b6b"/>
+              <stop offset="100%" style="stop-color:#ee5a24"/>
+            </linearGradient>
+          </defs>
+          <rect x="8" y="8" width="112" height="112" rx="24" fill="#1a1a2e"/>
+          <g stroke="url(#brandGrad)" stroke-linecap="round" fill="none">
+            <line x1="28" y1="44" x2="100" y2="44" stroke-width="8" opacity="0.4"/>
+            <line x1="28" y1="64" x2="100" y2="64" stroke-width="10"/>
+            <line x1="28" y1="84" x2="100" y2="84" stroke-width="8" opacity="0.4"/>
+            <circle cx="44" cy="64" r="4" fill="#fff"/>
+          </g>
+        </svg>`;
+        
+        sizes.forEach(size => {
+            const div = document.createElement('div');
+            div.style.marginBottom = '20px';
+            
+            const label = document.createElement('h3');
+            label.textContent = `icon${size}.png (${size}x${size})`;
+            div.appendChild(label);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            const blob = new Blob([svgContent], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, size, size);
+                URL.revokeObjectURL(url);
+                
+                // Convert to PNG and display as downloadable image
+                const pngUrl = canvas.toDataURL('image/png');
+                const pngImg = document.createElement('img');
+                pngImg.src = pngUrl;
+                pngImg.style.border = '1px solid #ccc';
+                pngImg.style.background = '#fff';
+                div.appendChild(pngImg);
+                
+                const link = document.createElement('a');
+                link.href = pngUrl;
+                link.download = `icon${size}.png`;
+                link.textContent = ` Download icon${size}.png`;
+                link.style.marginLeft = '10px';
+                div.appendChild(link);
+            };
+            
+            img.src = url;
+            container.appendChild(div);
+        });
+    </script>
+</body>
+</html>

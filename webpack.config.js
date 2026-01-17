@@ -24,7 +24,10 @@ module.exports = {
         { from: "src/viewer/viewer.css", to: "viewer.css" },
         { from: "src/fullscreen/fullscreen.html", to: "fullscreen.html" },
         { from: "src/fullscreen/fullscreen.css", to: "fullscreen.css" },
-        { from: "assets/icon.svg", to: "assets/icon.svg" },
+        { from: "assets/icon16.png", to: "assets/icon16.png" },
+        { from: "assets/icon32.png", to: "assets/icon32.png" },
+        { from: "assets/icon48.png", to: "assets/icon48.png" },
+        { from: "assets/icon128.png", to: "assets/icon128.png" },
         { from: "node_modules/pdfjs-dist/build/pdf.worker.min.js", to: "pdf.worker.min.js" }
       ],
     }),

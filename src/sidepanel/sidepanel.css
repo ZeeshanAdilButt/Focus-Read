@@ -20,15 +20,14 @@ body {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 20px;
-      background: linear-gradient(180deg, rgba(20,20,30,0.95) 0%, rgba(15,15,22,0.9) 100%);
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 16px 20px;
+      background: rgba(12, 12, 18, 0.98);
+      border-bottom: 1px solid rgba(255,255,255,0.03);
   }
 
   .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
   }
 
   .brand-icon {
@@ -37,31 +36,25 @@ body {
       justify-content: center;
   }
 
-  .brand-name {
-      font-size: 1.1rem;
-      font-weight: 600;
-      background: linear-gradient(135deg, #fff 0%, #888 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 0.3px;
-  }
-
   .header-stats {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
+      gap: 12px;
+  }
+
+  .stat-progress {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #ff8a7b;
+      background: rgba(255, 123, 123, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+  }
+
+  .stat-time {
+      font-size: 0.75rem;
+      font-weight: 500;
       color: #666;
-  }
-
-  .stat {
-      color: #888;
-  }
-
-  .stat-divider {
-      color: #333;
-      font-size: 0.6rem;
   }
 
   /* Progress Track */
@@ -687,23 +680,25 @@ body {
   /* Toast Notification */
   .toast {
       position: fixed;
-      bottom: 100px;
+      bottom: 220px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: linear-gradient(135deg, #1f1f3a 0%, #16213e 100%);
+      background: rgba(20, 20, 35, 0.95);
       color: #fff;
-      padding: 12px 24px;
-      border-radius: 25px;
+      padding: 10px 20px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 500;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(231, 76, 60, 0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
       z-index: 1000;
       opacity: 0;
       transition: all 0.3s ease;
       pointer-events: none;
+      max-width: 280px;
+      text-align: center;
   }
   
   .toast.show {
@@ -712,7 +707,7 @@ body {
   }
   
   .toast i {
-      color: #e74c3c;
+      color: #ff8a7b;
   }
   
   .toast.hidden {

@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         textColor: '#ffffff',
         focusColor: '#e74c3c',
         navMode: 'paragraphs', // 'seconds', 'words', 'sentences', 'paragraphs'
-        navAmount: 10
+        navAmount: 1
     };
 
     // Toast notification helper
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
             textColor: '#ffffff',
             focusColor: '#e74c3c',
             navMode: 'paragraphs',
-            navAmount: 10
+            navAmount: 1
         };
         syncSettingsUI();
     });
@@ -563,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     navAmountInput.addEventListener('change', (e) => {
-        config.navAmount = parseInt(e.target.value) || 10;
+        config.navAmount = parseInt(e.target.value) || 1;
     });
     
     function updateNavTooltips() {
