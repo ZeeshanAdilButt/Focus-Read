@@ -14,14 +14,26 @@ Your personal speed reading companion. Read web pages and PDFs faster using RSVP
 
 ## Getting Started
 
-### Option 1: Download Pre-built Extension (Easiest)
+### Option 1: Download from Releases (Recommended)
 
-The easiest way to get started is to download the pre-built extension:
+You can simply download the latest version as a zip file:
+
+1. Go to the [Releases page](https://github.com/zeeshanadilbutt/Focus-Read/releases)
+2. Download `flow-mate-extension.zip` from the latest release
+3. Unzip the file
+4. Open Chrome and go to `chrome://extensions/`
+5. Enable "Developer mode" (toggle in the top right)
+6. Click "Load unpacked"
+7. Select the folder you just unzipped
+
+### Option 2: Download Repository with Pre-built Extension
+
+If you prefer to download the whole repository:
 
 1. **Download the Repository**
-   - Go to the [GitHub repository](https://github.com/yourusername/flow-mate)
+   - Go to the [GitHub repository](https://github.com/zeeshanadilbutt/Focus-Read)
    - Click the green "Code" button and select "Download ZIP"
-   - Or clone: `git clone https://github.com/yourusername/flow-mate.git`
+   - Or clone: `git clone https://github.com/zeeshanadilbutt/Focus-Read.git`
 
 2. **Extract and Load**
    - Extract the ZIP file (if downloaded)
@@ -34,7 +46,7 @@ The easiest way to get started is to download the pre-built extension:
    - The extension is now installed and ready to use
    - Click the Flow Mate icon in your Chrome toolbar
 
-### Option 2: Build from Source
+### Option 3: Build from Source
 
 If you want to build the extension yourself:
 

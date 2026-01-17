@@ -1,9 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const archiver = require('archiver');
 
 // Copy dist folder to release folder
 const distPath = path.join(__dirname, '..', 'dist');
 const releasePath = path.join(__dirname, '..', 'release');
+const zipPath = path.join(__dirname, '..', 'flow-mate-extension.zip');
 
 // Clean release folder if it exists
 if (fs.existsSync(releasePath)) {
@@ -65,4 +67,32 @@ fs.writeFileSync(path.join(releasePath, 'README.md'), releaseReadme);
 
 console.log('✓ Release folder prepared successfully!');
 console.log('  Location: release/');
-console.log('  Ready to load as unpacked extension');
+
+// Create zip file
+const output = fs.createWriteStream(zipPath);
+const archive = archiver('zip', {
+  zlib: { level: 9 } // Sets the compression level.
+});
+
+output.on('close', function() {
+  console.log('✓ Zip file created successfully!');
+  console.log(`  Location: flow-mate-extension.zip (${archive.pointer()} total bytes)`);
+  console.log('  Ready to be uploaded to GitHub Releases');
+});
+
+archive.on('warning', function(err) {
+  if (err.code === 'ENOENT') {
+    console.warn(err);
+  } else {
+    throw err;
+  }
+});
+
+archive.on('error', function(err) {
+  throw err;
+});
+
+archive.pipe(output);
+archive.directory(releasePath, false);
+archive.finalize();
+
