@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chunkSizeInput = document.getElementById('chunkSizeInput');
     const scanPageBtn = document.getElementById('scanPageBtn');
     const setTextBtn = document.getElementById('setTextBtn');
+    const clearTextBtn = document.getElementById('clearTextBtn');
     const manualInputOverlay = document.getElementById('manualInputOverlay');
     const manualTextInput = document.getElementById('manualTextInput');
     const loadInputBtn = document.getElementById('loadInputBtn');
@@ -235,16 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const { chunk, nextIndexChange } = updateDisplay();
         lastStepDelta = nextIndexChange; // Store for next advance
         
-        // Broadcast
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            if (tabs[0]) { 
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    action: "highlight", 
-                    index: currentIndex,
-                    text: words[currentIndex] 
-                }).catch(() => {});
-            }
-        });
+        // Broadcast highlight to document
+        broadcastHighlight();
 
         updateProgress();
         scheduleNextStep(chunk);
@@ -258,6 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Display CURRENT index immediately
         const { chunk, nextIndexChange } = updateDisplay();
         lastStepDelta = nextIndexChange;
+        
+        // Initial broadcast
+        broadcastHighlight();
         
         scheduleNextStep(chunk);
     }
@@ -273,10 +269,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadText(text, indexToStart = 0) {
         if (!text) return;
+        // Stop any current playback
+        pause();
+        // Clear and load new text
         words = text.trim().split(/\s+/);
         currentIndex = indexToStart;
+        lastStepDelta = 1;
         updateDisplay();
         updateProgress();
+        // Highlight in original document
+        broadcastHighlight();
+    }
+
+    function clearText() {
+        pause();
+        words = [];
+        currentIndex = 0;
+        lastStepDelta = 1;
+        wordDisplay.innerHTML = '<span class="placeholder">Ready</span>';
+        progressBar.value = 0;
+        progressText.innerText = '0%';
+        timeRemaining.innerText = '--:--';
+        // Clear highlight in document
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+            if (tabs[0]) { 
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    action: "clearHighlight"
+                }).catch(() => {});
+            }
+        });
+    }
+
+    function broadcastHighlight() {
+        if (words.length === 0) return;
+        
+        // Get the current chunk being displayed
+        let chunkText = '';
+        if (config.mode === 'sentence') {
+            let tempIndex = currentIndex;
+            let collected = [];
+            while (tempIndex < words.length) {
+                const w = words[tempIndex];
+                collected.push(w);
+                if (/[.?!]$/.test(w)) break;
+                if (collected.length > 30) break;
+                tempIndex++;
+            }
+            chunkText = collected.join(' ');
+        } else {
+            chunkText = words.slice(currentIndex, currentIndex + config.chunkSize).join(' ');
+        }
+        
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+            if (tabs[0]) { 
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    action: "highlight", 
+                    index: currentIndex,
+                    text: chunkText,
+                    words: words,
+                    mode: config.mode
+                }).catch(() => {});
+            }
+        });
     }
 
     // Apply UI from Config
@@ -410,6 +464,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Auto-load from active tab on open
     async function fetchPageContent() {
+         // Clear existing content first
+         clearText();
+         
          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
          if (tab) {
              // Ask for content
@@ -431,6 +488,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scanPageBtn.addEventListener('click', () => {
         fetchPageContent();
+    });
+    
+    // Clear Button
+    clearTextBtn.addEventListener('click', () => {
+        clearText();
     });
 
     // 2. Play/Pause
@@ -513,41 +575,57 @@ document.addEventListener('DOMContentLoaded', () => {
         if (wasPlaying) play();
     });
 
-    // 7. Context Menu Listener
-    // The background script cannot easily message us if we weren't open.
-    // However, if we are open, we can listen for runtime messages.
+    // 7. Context Menu Listener - "Read from here"
+    // This should: clear existing content, load fresh page content, find the selection, and position there
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
          if (message.action === "contextMenuTriggered") {
-             // We received a selection from context menu!
-             if (message.selectionText) {
-                 // Option A: Just read the selection
-                 // Option B: Find selection in the FULL text and start there.
-                 // For MVP, if they select text, let's just read that text.
-                 // If they want to "read from here" in context of full page, it requires finding the index.
-                 // That search is complex if the selection is generic. 
+             const selectionText = message.selectionText?.trim();
+             
+             if (!selectionText) {
+                 // No selection - just reload the page content
+                 fetchPageContent();
+                 return;
+             }
+             
+             // Clear current state first
+             pause();
+             
+             // Fetch fresh content from the page and find selection position
+             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                 if (!tabs[0]) return;
                  
-                 // Let's check if we already have words loaded.
-                 if (words.length > 0) {
-                     // Try to find this snippet in our current words list
-                     // Flatten words to string
-                     const currentFullText = words.join(' ');
-                     const searchIndex = currentFullText.indexOf(message.selectionText.trim());
+                 chrome.tabs.sendMessage(tabs[0].id, { action: "getContent" }, (response) => {
+                     if (chrome.runtime.lastError || !response?.content) {
+                         // Fallback: just load the selection itself
+                         loadText(selectionText);
+                         return;
+                     }
                      
-                     if (searchIndex !== -1) {
-                         // Convert char index to word index
-                         // Rough estimate: count spaces before the match
-                         const textBefore = currentFullText.substring(0, searchIndex);
-                         const wordIndex = textBefore.split(/\s+/).length;
-                         currentIndex = wordIndex;
+                     const fullText = response.content;
+                     const fullWords = fullText.trim().split(/\s+/);
+                     
+                     // Find where the selection starts in the full text
+                     const selectionIndex = fullText.indexOf(selectionText);
+                     
+                     if (selectionIndex !== -1) {
+                         // Count words before the selection
+                         const textBefore = fullText.substring(0, selectionIndex);
+                         const wordsBefore = textBefore.trim().split(/\s+/).filter(w => w.length > 0);
+                         const startWordIndex = wordsBefore.length;
+                         
+                         // Load full content and position at the selection
+                         words = fullWords;
+                         currentIndex = Math.max(0, startWordIndex);
+                         lastStepDelta = 1;
                          updateDisplay();
                          updateProgress();
-                         return; // Done
+                         broadcastHighlight();
+                     } else {
+                         // Selection not found in full text, just load it directly
+                         loadText(selectionText);
                      }
-                 }
-                 
-                 // Fallback: Just load the selection as new text
-                 loadText(message.selectionText);
-             }
+                 });
+             });
          }
     });
 

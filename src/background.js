@@ -11,7 +11,8 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "focus-read-from-here",
     title: "Start Focus Read from here",
-    contexts: ["selection", "page"]
+    contexts: ["selection", "page", "frame"],
+    documentUrlPatterns: ["<all_urls>"]
   });
 });
 

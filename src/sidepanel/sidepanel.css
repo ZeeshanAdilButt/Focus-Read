@@ -138,6 +138,53 @@ body {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+  }
+
+  .action-buttons {
+      display: flex;
+      gap: 8px;
+  }
+
+  .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+      border: 1px solid #444;
+      color: #ddd;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+  }
+
+  .action-btn i {
+      font-size: 0.9rem;
+      color: #e74c3c;
+  }
+
+  .action-btn:hover {
+      background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+      border-color: #e74c3c;
+      color: #fff;
+      transform: translateY(-1px);
+  }
+
+  .action-btn:active {
+      transform: translateY(0);
+  }
+
+  .action-btn-danger:hover {
+      border-color: #c0392b;
+      background: linear-gradient(135deg, #2a1a1a 0%, #3a2020 100%);
+  }
+
+  .action-btn-danger i {
+      color: #c0392b;
   }
   
   .text-btn {

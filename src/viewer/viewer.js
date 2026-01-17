@@ -120,92 +120,79 @@ async function renderPage(num) {
 // We can listen to runtime messages directly.
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // Check if message is intended for us (the viewer)
-    // We can filter by action or if we are the active tab.
-    // Sidepanel will send "getContent" to the active tab. 
-    // If we are the active tab, we should respond.
-    
     if (request.action === "getContent") {
         const fullText = allWords.map(w => w.word).join(' ');
         sendResponse({ content: fullText });
     } else if (request.action === "highlight") {
-         const index = request.index;
-         if (index >= 0 && index < allWords.length) {
-             const wordData = allWords[index];
-             highlightWord(wordData);
+         // Get the text to highlight
+         const text = request.text;
+         if (text) {
+             highlightTextInPdf(text, request.index);
          }
+    } else if (request.action === "clearHighlight") {
+        clearHighlights();
     }
 });
 
-function highlightWord(wordData) {
-    if (!wordData) return;
+function highlightTextInPdf(searchText, wordIndex) {
+    if (!searchText) return;
     
     // Clear previous
     clearHighlights();
 
+    // Find which page contains this word index
+    let targetPage = 1;
+    if (wordIndex >= 0 && wordIndex < allWords.length) {
+        targetPage = allWords[wordIndex].page;
+    } else {
+        // Try to find by text
+        const foundWord = allWords.find(w => searchText.includes(w.word));
+        if (foundWord) {
+            targetPage = foundWord.page;
+        }
+    }
+
     // Find the page div
-    const pageDiv = document.getElementById(`page-${wordData.page}`);
+    const pageDiv = document.getElementById(`page-${targetPage}`);
     if (!pageDiv) return;
     
-    // Scroll into view
+    // Scroll page into view
     pageDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // Create highlight element
-    // Note: We need accurate coordinates. Using transform directly is hard without matrix math.
-    // Simplifying: accessing the textLayer's span could be easier if we linked them.
-    // But we didn't link 'allWords' to DOM elements.
+    // Create highlight overlay on the page
+    const highlightOverlay = document.createElement('div');
+    highlightOverlay.className = 'focus-read-pdf-highlight';
+    highlightOverlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 4px solid #e74c3c;
+        border-radius: 8px;
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: inset 0 0 30px rgba(231, 76, 60, 0.15);
+    `;
+    pageDiv.appendChild(highlightOverlay);
     
-    // Alternative: Just approximate using the page number to scroll for now.
-    // Precise highlighting requires bridging the gap between 'allWords' (logic) and DOM.
-    // Since we used pdfjsLib.renderTextLayer, spans exist.
-    // But we don't know WHICH span corresponds to our word easily without tracking.
-    
-    // Fallback: visual indication on the page container?
-    // Let's create a generic highlight box in the center of the page as a placeholder
-    // acknowledging "User is on Page X".
-    
-    // BETTER: Use pdfjsLib's viewport converter if we can re-create it.
-    // const scale = 1.5;
-    // const viewport = pageDiv.dataset.viewport... (we didn't store it)
-    
-    const hl = document.createElement('div');
-    hl.className = 'highlight';
-    hl.style.left = '0';
-    hl.style.right = '0';
-    hl.style.top = '0'; // Placeholder
-    hl.style.height = '20px';
-    // pageDiv.appendChild(hl);
-    
-    // For MVP, just scrolling the page into view is a huge win.
-    
-    // Create a temporary visual highlight on the page container
-    // This is better than nothing.
-    const highlightBox = document.createElement('div');
-    highlightBox.className = 'highlight-box';
-    highlightBox.style.position = 'absolute';
-    highlightBox.style.border = '3px solid red';
-    highlightBox.style.zIndex = '1000';
-    highlightBox.style.pointerEvents = 'none';
-    
-    // Approximate location? We have transform [a, b, c, d, x, y]
-    // x, y are in PDF points.
-    // viewport.convertToViewportPoint(x, y) gives logical pixels.
-    // We need to re-get viewport.
-    
-    // HACK: Re-calculate viewport for the page
-    // We know scale is 1.5, we assume it hasn't changed (no zoom support yet)
-    
-    // Better: Just highlight the whole page for now as "Current Page"
-    pageDiv.style.boxShadow = "0 0 0 5px rgba(231, 76, 60, 0.5)";
-    setTimeout(() => {
-        pageDiv.style.boxShadow = ""; // clear after a bit or stick? Stick is better for "tracking"
-        // But we clearHighlights() at start of function, so it moves.
-    }, 1500);
+    // Also add a subtle glow
+    pageDiv.style.boxShadow = "0 0 20px rgba(231, 76, 60, 0.6)";
 
-    console.log(`Highlighting word on Page ${wordData.page}: ${wordData.word}`);
+    console.log(`Highlighting on Page ${targetPage}: ${searchText}`);
+}
+
+function highlightWord(wordData) {
+    if (!wordData) return;
+    highlightTextInPdf(wordData.word, allWords.indexOf(wordData));
 }
 
 function clearHighlights() {
+    // Remove overlay elements
+    const overlays = document.querySelectorAll('.focus-read-pdf-highlight');
+    overlays.forEach(o => o.remove());
+    
+    // Reset page shadows
     const pages = document.querySelectorAll('.pdf-page');
     pages.forEach(p => p.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)');
 }

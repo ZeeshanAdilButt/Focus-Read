@@ -41,8 +41,20 @@
         </div>
 
         <div class="secondary-controls">
-             <button id="scanPageBtn" class="text-btn" title="Reload text from current page">Read Page</button>
-             <button id="setTextBtn" class="text-btn" title="Paste text manually">Paste Text</button>
+             <div class="action-buttons">
+                 <button id="scanPageBtn" class="action-btn" title="Reload text from current page">
+                     <i class="fas fa-file-alt"></i>
+                     <span>Read Page</span>
+                 </button>
+                 <button id="setTextBtn" class="action-btn" title="Paste text manually">
+                     <i class="fas fa-paste"></i>
+                     <span>Paste Text</span>
+                 </button>
+                 <button id="clearTextBtn" class="action-btn action-btn-danger" title="Clear current text">
+                     <i class="fas fa-trash"></i>
+                     <span>Clear</span>
+                 </button>
+             </div>
              <div class="wpm-control">
                 <span>WPM:</span>
                 <span id="wpmDisplay">300</span>
